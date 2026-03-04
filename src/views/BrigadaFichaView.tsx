@@ -3,7 +3,6 @@ import { supabase } from '../lib/supabaseClient';
 
 interface BrigadaFichaViewProps {
     userId: string;
-    teamId: string;
     onComplete: () => void;
 }
 
@@ -65,7 +64,7 @@ const BRIGADA_ROLES = [
     }
 ];
 
-export default function BrigadaFichaView({ userId, teamId, onComplete }: BrigadaFichaViewProps) {
+export default function BrigadaFichaView({ userId, onComplete }: BrigadaFichaViewProps) {
     const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
     const [signed, setSigned] = useState(false);
     const [loading, setLoading] = useState(false);
@@ -117,8 +116,8 @@ export default function BrigadaFichaView({ userId, teamId, onComplete }: Brigada
                             key={role.id}
                             onClick={() => setSelectedRoleId(role.id)}
                             className={`relative p-6 rounded-2xl border-2 transition-all flex flex-col text-left group ${selectedRoleId === role.id
-                                    ? 'border-emerald-500 bg-emerald-500/10'
-                                    : 'border-white/5 bg-white/5 hover:border-white/20'
+                                ? 'border-emerald-500 bg-emerald-500/10'
+                                : 'border-white/5 bg-white/5 hover:border-white/20'
                                 }`}
                         >
                             <div className="text-3xl mb-4">{role.icon}</div>

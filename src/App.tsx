@@ -6,7 +6,6 @@ import LoginView from './views/LoginView';
 import OnboardingView from './views/OnboardingView';
 import BrigadaFichaView from './views/BrigadaFichaView';
 import { ZONAS_MURCIA } from './data/zonas';
-import type { Zone } from './types';
 import type { Session } from '@supabase/supabase-js';
 
 type View = 'landing' | 'onboarding' | 'brigada-ficha' | 'dashboard' | 'unauthorized' | 'role-selection';
@@ -83,10 +82,7 @@ function App() {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleZoneSelected = (zone: Zone) => {
-    setSelectedZone(zone);
-    setCurrentView('dashboard');
-  };
+
 
   const renderView = () => {
     if (loading) {
@@ -139,7 +135,6 @@ function App() {
         return (
           <BrigadaFichaView
             userId={session.user.id}
-            teamId={userProfile?.team_id}
             onComplete={() => fetchProfile(session.user.id)}
           />
         );
