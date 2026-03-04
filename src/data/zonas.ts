@@ -1,0 +1,77 @@
+import type { Zone } from '../types';
+
+export const ZONAS_MURCIA: Zone[] = [
+    {
+        id: 1,
+        name: 'Cartagena y Campo de Cartagena',
+        territory: 'Cartagena, Los Alcázares, San Pedro del Pinatar',
+        concept: 'Mar y Huerta',
+        description: 'Zona costera con rica tradición pesquera y productos de la huerta. Especializada en productos del Mar Menor y cultivos de regadío.',
+        ingredients: ['Murta', 'Dorada', 'Lubina', 'Tomate de la huerta', 'Pimiento', 'Langostino de Vinaroz'],
+        emoji: '🐟',
+    },
+    {
+        id: 2,
+        name: 'Lorca y Comarca del Guadalentín',
+        territory: 'Lorca, Águilas, Mazarrón',
+        concept: 'Ganadería y Conservas',
+        description: 'Tradición ganadera y conservera. Famosa por sus embutidos, quesos y conservas de pescado azul.',
+        ingredients: ['Cabrito', 'Queso de Lorca', 'Aceite de oliva', 'Boquerón', 'Melón de Águilas'],
+        emoji: '🧀',
+    },
+    {
+        id: 3,
+        name: 'Altiplano de Yecla y Jumilla',
+        territory: 'Yecla, Jumilla',
+        concept: 'Vino y Caza',
+        description: 'La capital del vino murciano. Excelentes caldos Monastrell y tradición cinegética con caza mayor y menor.',
+        ingredients: ['Uva Monastrell', 'Conejo de campo', 'Perdiz', 'Aceite de oliva virgen extra', 'Hongos silvestres'],
+        emoji: '🍷',
+    },
+    {
+        id: 4,
+        name: 'Noroeste: Caravaca y Moratalla',
+        territory: 'Caravaca de la Cruz, Moratalla, Cehegín',
+        concept: 'Gastronomía de Montaña',
+        description: 'Cocina de montaña con productos del bosque, caza y tradición repostera ligada a la Vera Cruz.',
+        ingredients: ['Trucha', 'Setas', 'Miel de montaña', 'Arroz de montaña', 'Lechazo'],
+        emoji: '🏔️',
+    },
+    {
+        id: 5,
+        name: 'Vega del Segura: Cieza y Mula',
+        territory: 'Cieza, Mula, Abarán',
+        concept: 'Frutas y Almendra',
+        description: 'El gran vergel frutal de la Región. Melocotoneros y albaricoqueros en flor, conocida mundialmente por la calidad de su fruta.',
+        ingredients: ['Melocotón de Cieza', 'Albaricoque', 'Ciruela', 'Almendra', 'Peras'],
+        emoji: '🍑',
+    },
+    {
+        id: 6,
+        name: 'Huerta de Murcia',
+        territory: 'Murcia Capital, Santomera, Molina de Segura',
+        concept: 'Tapeo y Tradición Huertana',
+        description: 'El corazón de la Región. La huerta más fértil del Mediterráneo, cuna de la gastronomía murciana del tapeo y los productos de km0.',
+        ingredients: ['Pimentón de Murcia', 'Ñora', 'Haba tierna', 'Guisantes', 'Tomate', 'Calabacín', 'Berenjena'],
+        emoji: '🌶️',
+    },
+    {
+        id: 7,
+        name: 'Mar Menor y Manga',
+        territory: 'San Javier, Los Alcázares, Cabo de Palos',
+        concept: 'Arroces y Mariscos',
+        description: 'Cultura del arroz y los mariscos. El Mar Menor ofrece langostinos y calderos únicos reconocidos internacionalmente.',
+        ingredients: ['Langostino del Mar Menor', 'Calamar', 'Arroz caldero', 'Salmuera', 'Dorada'],
+        emoji: '🦐',
+    },
+];
+
+export const MURCIA_REGIONS = [
+    'Cartagena y Campo de Cartagena',
+    'Lorca y Comarca del Guadalentín',
+    'Altiplano de Yecla y Jumilla',
+    'Noroeste: Caravaca y Moratalla',
+    'Vega del Segura: Cieza y Mula',
+    'Huerta de Murcia',
+    'Mar Menor y La Manga',
+];
