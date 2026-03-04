@@ -64,13 +64,21 @@ export default function DashboardView({ zone, onChangeZone }: DashboardViewProps
             {/* Top bar */}
             <header className="border-b border-white/5 bg-gray-900/50 backdrop-blur-md sticky top-0 z-10">
                 <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-3">
-                        <div className="w-8 h-8 bg-gradient-to-br from-emerald-500 to-emerald-700 rounded-lg flex items-center justify-center text-white text-sm">
-                            🌿
-                        </div>
-                        <div>
+                    <div className="flex items-center gap-4">
+                        <img
+                            src="https://drive.google.com/uc?id=1nu2fOvKoWMIKGehqtjLjpcjuqiyMSR8A"
+                            alt="Logo IES La Flota"
+                            className="h-10 w-auto object-contain"
+                        />
+                        <div className="h-6 w-px bg-white/10" />
+                        <img
+                            src="https://drive.google.com/uc?id=1DkCOqFGdw3PZbyNUnTQNgeaAGjBfv1_e"
+                            alt="Logo jcbprofesor"
+                            className="h-8 w-auto object-contain"
+                        />
+                        <div className="hidden sm:block ml-2">
                             <h1 className="text-white font-bold text-sm">Carta Sostenible · Región de Murcia</h1>
-                            <p className="text-gray-600 text-xs">Proyecto Intermodular 2026/27</p>
+                            <p className="text-emerald-500/60 text-[10px] uppercase tracking-wider font-bold">IES La Flota de Murcia · 26/27</p>
                         </div>
                     </div>
 

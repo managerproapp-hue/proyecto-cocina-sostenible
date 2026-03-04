@@ -9,9 +9,22 @@ export default function LandingView({ onStart }: LandingViewProps) {
             <div className="absolute inset-0 bg-gradient-to-br from-gray-950 via-emerald-950/30 to-gray-950" />
             <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-emerald-900/20 via-transparent to-transparent" />
 
-            {/* Floating orbs */}
             <div className="absolute top-20 left-20 w-72 h-72 bg-emerald-500/5 rounded-full blur-3xl animate-pulse" />
             <div className="absolute bottom-20 right-20 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl animate-pulse delay-1000" />
+
+            {/* School Logo */}
+            <div className="absolute top-8 left-8 flex items-center gap-4 z-20">
+                <img
+                    src="https://drive.google.com/uc?id=1nu2fOvKoWMIKGehqtjLjpcjuqiyMSR8A"
+                    alt="Logo IES La Flota"
+                    className="h-16 w-auto object-contain brightness-110 contrast-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]"
+                />
+                <img
+                    src="https://drive.google.com/uc?id=1DkCOqFGdw3PZbyNUnTQNgeaAGjBfv1_e"
+                    alt="Logo jcbprofesor"
+                    className="h-12 w-auto object-contain opacity-80 hover:opacity-100 transition-opacity"
+                />
+            </div>
 
             <div className="relative z-10 text-center px-6 max-w-4xl mx-auto">
                 {/* Badge */}
@@ -36,7 +49,7 @@ export default function LandingView({ onStart }: LandingViewProps) {
                 </p>
 
                 <p className="text-gray-600 text-base mb-12">
-                    CIFP Hostelería y Turismo de Cartagena · 2026/27
+                    IES La Flota de Murcia · 2026/27
                 </p>
 
                 {/* CTA Button */}
