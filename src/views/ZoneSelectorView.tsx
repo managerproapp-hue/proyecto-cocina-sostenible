@@ -74,26 +74,29 @@ export default function ZoneSelectorView({ onSelect, onBack }: ZoneSelectorViewP
                                     {zone.description}
                                 </p>
 
-                                {/* Ingredient tags */}
-                                <div className="flex flex-wrap gap-1.5">
-                                    {zone.ingredients.slice(0, 4).map((ing: string) => (
-                                        <span
-                                            key={ing}
-                                            className={`text-xs px-2 py-0.5 rounded-full border transition-colors
-                        ${isSelected
-                                                    ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-400'
-                                                    : 'border-white/10 bg-white/5 text-gray-500'
-                                                }
-                      `}
-                                        >
-                                            {ing}
-                                        </span>
-                                    ))}
-                                    {zone.ingredients.length > 4 && (
-                                        <span className="text-xs px-2 py-0.5 text-gray-600">
-                                            +{zone.ingredients.length - 4} más
-                                        </span>
-                                    )}
+                                {/* Pantry / Despensa */}
+                                <div className="mt-4 pt-4 border-t border-white/10">
+                                    <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                        <svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                                        </svg>
+                                        Pequeña Despensa Sugerida
+                                    </p>
+                                    <div className="flex flex-wrap gap-1.5">
+                                        {zone.ingredients.map((ing: string) => (
+                                            <span
+                                                key={ing}
+                                                className={`text-xs px-2 py-1 rounded-md border transition-colors font-medium
+                                                ${isSelected
+                                                        ? 'border-emerald-500/40 bg-emerald-500/15 text-emerald-300'
+                                                        : 'border-white/10 bg-white/5 text-gray-400'
+                                                    }
+                                                `}
+                                            >
+                                                {ing}
+                                            </span>
+                                        ))}
+                                    </div>
                                 </div>
                             </button>
                         );
