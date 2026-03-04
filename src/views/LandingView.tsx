@@ -15,12 +15,12 @@ export default function LandingView({ onStart }: LandingViewProps) {
             {/* School Logo */}
             <div className="absolute top-8 left-8 flex items-center gap-4 z-20">
                 <img
-                    src="https://drive.google.com/uc?id=1nu2fOvKoWMIKGehqtjLjpcjuqiyMSR8A"
+                    src="https://lh3.googleusercontent.com/d/1nu2fOvKoWMIKGehqtjLjpcjuqiyMSR8A"
                     alt="Logo IES La Flota"
                     className="h-16 w-auto object-contain brightness-110 contrast-110 drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]"
                 />
                 <img
-                    src="https://drive.google.com/uc?id=1DkCOqFGdw3PZbyNUnTQNgeaAGjBfv1_e"
+                    src="https://lh3.googleusercontent.com/d/1DkCOqFGdw3PZbyNUnTQNgeaAGjBfv1_e"
                     alt="Logo jcbprofesor"
                     className="h-12 w-auto object-contain opacity-80 hover:opacity-100 transition-opacity"
                 />

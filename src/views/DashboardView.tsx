@@ -66,13 +66,13 @@ export default function DashboardView({ zone, onChangeZone }: DashboardViewProps
                 <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
                     <div className="flex items-center gap-4">
                         <img
-                            src="https://drive.google.com/uc?id=1nu2fOvKoWMIKGehqtjLjpcjuqiyMSR8A"
+                            src="https://lh3.googleusercontent.com/d/1nu2fOvKoWMIKGehqtjLjpcjuqiyMSR8A"
                             alt="Logo IES La Flota"
                             className="h-10 w-auto object-contain"
                         />
                         <div className="h-6 w-px bg-white/10" />
                         <img
-                            src="https://drive.google.com/uc?id=1DkCOqFGdw3PZbyNUnTQNgeaAGjBfv1_e"
+                            src="https://lh3.googleusercontent.com/d/1DkCOqFGdw3PZbyNUnTQNgeaAGjBfv1_e"
                             alt="Logo jcbprofesor"
                             className="h-8 w-auto object-contain"
                         />
