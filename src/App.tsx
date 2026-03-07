@@ -17,15 +17,17 @@ function App() {
   const [currentView, setCurrentView] = useState<View>('landing');
   const [userProfile, setUserProfile] = useState<any>(null);
 
-  const fetchProfile = async (userId: string) => {
+  const fetchProfile = async (userId: string, userEmail: string | undefined) => {
+    const isAdmin = userEmail === 'managerproapp@gmail.com';
+
     // 1. Check Whitelist
     const { data: whitelist } = await supabase
       .from('allowed_emails')
       .select('email')
-      .eq('email', session?.user?.email)
+      .eq('email', userEmail)
       .single();
 
-    if (!whitelist && session?.user?.email !== 'managerproapp@gmail.com') { // Hardcoded admin check as fallback
+    if (!whitelist && !isAdmin) {
       setCurrentView('unauthorized');
       setLoading(false);
       return;
@@ -39,18 +41,30 @@ function App() {
       .single();
 
     if (!profile) {
-      const isAdmin = session?.user?.email === 'managerproapp@gmail.com';
-      const { data: newProfile } = await supabase
+      const { data: newProfile, error: insertError } = await supabase
         .from('profiles')
         .insert({
           id: userId,
-          email: session?.user?.email,
-          full_name: session?.user?.user_metadata?.full_name,
+          email: userEmail,
+          full_name: session?.user?.user_metadata?.full_name || userEmail?.split('@')[0],
           rol: isAdmin ? 'admin' : 'alumno'
         })
         .select()
         .single();
-      profile = newProfile;
+
+      if (insertError) {
+        console.error("Error creating profile mapping", insertError);
+        // Fallback for extreme cases where RLS prevents insert but auth is accepted
+        if (isAdmin) {
+          profile = { id: userId, email: userEmail, rol: 'admin' };
+        } else {
+          setCurrentView('unauthorized');
+          setLoading(false);
+          return;
+        }
+      } else {
+        profile = newProfile;
+      }
     }
 
     setUserProfile(profile);
@@ -70,13 +84,13 @@ function App() {
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
-      if (session) fetchProfile(session.user.id);
+      if (session) fetchProfile(session.user.id, session.user.email);
       else setLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
-      if (session) fetchProfile(session.user.id);
+      if (session) fetchProfile(session.user.id, session.user.email);
       else {
         setUserProfile(null);
         setLoading(false);
@@ -132,14 +146,14 @@ function App() {
           <OnboardingView
             userId={session.user.id}
             userEmail={session.user.email || ''}
-            onComplete={() => fetchProfile(session.user.id)}
+            onComplete={() => fetchProfile(session.user.id, session.user.email)}
           />
         );
       case 'brigada-ficha':
         return (
           <BrigadaFichaView
             userId={session.user.id}
-            onComplete={() => fetchProfile(session.user.id)}
+            onComplete={() => fetchProfile(session.user.id, session.user.email)}
           />
         );
       case 'admin-dashboard':
