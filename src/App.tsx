@@ -26,6 +26,7 @@ function App() {
 
     if (!whitelist && session?.user?.email !== 'managerproapp@gmail.com') { // Hardcoded admin check as fallback
       setCurrentView('unauthorized');
+      setLoading(false);
       return;
     }
 
