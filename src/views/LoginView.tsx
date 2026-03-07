@@ -29,7 +29,7 @@ export default function LoginView() {
                     <div className="h-10 w-px bg-white/10" />
                     <img
                         src="https://lh3.googleusercontent.com/d/1DkCOqFGdw3PZbyNUnTQNgeaAGjBfv1_e"
-                        alt="jcbprofesor"
+                        alt="managerproapp"
                         className="h-12 w-auto object-contain opacity-80"
                     />
                 </div>

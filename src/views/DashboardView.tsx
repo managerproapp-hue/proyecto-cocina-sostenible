@@ -73,7 +73,7 @@ export default function DashboardView({ zone, onChangeZone }: DashboardViewProps
                         <div className="h-6 w-px bg-white/10" />
                         <img
                             src="https://lh3.googleusercontent.com/d/1DkCOqFGdw3PZbyNUnTQNgeaAGjBfv1_e"
-                            alt="Logo jcbprofesor"
+                            alt="Logo managerproapp"
                             className="h-8 w-auto object-contain"
                         />
                         <div className="hidden sm:block ml-2">

@@ -21,7 +21,7 @@ export default function LandingView({ onStart }: LandingViewProps) {
                 />
                 <img
                     src="https://lh3.googleusercontent.com/d/1DkCOqFGdw3PZbyNUnTQNgeaAGjBfv1_e"
-                    alt="Logo jcbprofesor"
+                    alt="Logo managerproapp"
                     className="h-12 w-auto object-contain opacity-80 hover:opacity-100 transition-opacity"
                 />
             </div>

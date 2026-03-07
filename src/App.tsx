@@ -24,7 +24,7 @@ function App() {
       .eq('email', session?.user?.email)
       .single();
 
-    if (!whitelist && session?.user?.email !== 'jcbprofesor@gmail.com') { // Hardcoded admin check as fallback
+    if (!whitelist && session?.user?.email !== 'managerproapp@gmail.com') { // Hardcoded admin check as fallback
       setCurrentView('unauthorized');
       return;
     }
@@ -37,12 +37,14 @@ function App() {
       .single();
 
     if (!profile) {
+      const isAdmin = session?.user?.email === 'managerproapp@gmail.com';
       const { data: newProfile } = await supabase
         .from('profiles')
         .insert({
           id: userId,
           email: session?.user?.email,
-          full_name: session?.user?.user_metadata?.full_name
+          full_name: session?.user?.user_metadata?.full_name,
+          rol: isAdmin ? 'admin' : 'alumno'
         })
         .select()
         .single();
