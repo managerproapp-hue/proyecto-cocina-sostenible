@@ -6,10 +6,11 @@ import LoginView from './views/LoginView';
 import OnboardingView from './views/OnboardingView';
 import BrigadaFichaView from './views/BrigadaFichaView';
 import AdminDashboardView from './views/AdminDashboardView';
+import WaitingApprovalView from './views/WaitingApprovalView';
 import { ZONAS_MURCIA } from './data/zonas';
 import type { Session } from '@supabase/supabase-js';
 
-type View = 'landing' | 'onboarding' | 'brigada-ficha' | 'dashboard' | 'admin-dashboard' | 'unauthorized' | 'role-selection';
+type View = 'landing' | 'onboarding' | 'brigada-ficha' | 'dashboard' | 'admin-dashboard' | 'waiting-approval' | 'unauthorized' | 'role-selection';
 
 function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -20,20 +21,7 @@ function App() {
   const fetchProfile = async (userId: string, userEmail: string | undefined) => {
     const isAdmin = userEmail === 'managerproapp@gmail.com';
 
-    // 1. Check Whitelist
-    const { data: whitelist } = await supabase
-      .from('allowed_emails')
-      .select('email')
-      .eq('email', userEmail)
-      .single();
-
-    if (!whitelist && !isAdmin) {
-      setCurrentView('unauthorized');
-      setLoading(false);
-      return;
-    }
-
-    // 2. Get/Create Profile
+    // 1. Get/Create Profile
     let { data: profile } = await supabase
       .from('profiles')
       .select('*, teams(*)')
@@ -47,16 +35,16 @@ function App() {
           id: userId,
           email: userEmail,
           full_name: session?.user?.user_metadata?.full_name || userEmail?.split('@')[0],
-          rol: isAdmin ? 'admin' : 'alumno'
+          rol: isAdmin ? 'admin' : 'alumno',
+          status: isAdmin ? 'approved' : 'pending'
         })
         .select()
         .single();
 
       if (insertError) {
         console.error("Error creating profile mapping", insertError);
-        // Fallback for extreme cases where RLS prevents insert but auth is accepted
         if (isAdmin) {
-          profile = { id: userId, email: userEmail, rol: 'admin' };
+          profile = { id: userId, email: userEmail, rol: 'admin', status: 'approved' };
         } else {
           setCurrentView('unauthorized');
           setLoading(false);
@@ -69,8 +57,13 @@ function App() {
 
     setUserProfile(profile);
 
+    // 2. Routing Logic based on Status and Role
     if (profile?.rol === 'admin') {
       setCurrentView('admin-dashboard');
+    } else if (profile?.status === 'pending') {
+      setCurrentView('waiting-approval');
+    } else if (profile?.status === 'rejected') {
+      setCurrentView('unauthorized');
     } else if (!profile?.team_id) {
       setCurrentView('onboarding');
     } else if (!profile?.brigada_role || !profile?.has_signed_commitment) {
@@ -149,6 +142,8 @@ function App() {
             onComplete={() => fetchProfile(session.user.id, session.user.email)}
           />
         );
+      case 'waiting-approval':
+        return <WaitingApprovalView />;
       case 'brigada-ficha':
         return (
           <BrigadaFichaView
