@@ -12,6 +12,7 @@ export default function AdminDashboardView({ readOnly = false }: AdminDashboardV
         submissions: 0
     });
     const [pendingRequests, setPendingRequests] = useState<any[]>([]);
+    const [approvedUsers, setApprovedUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     const fetchData = async () => {
@@ -39,6 +40,17 @@ export default function AdminDashboardView({ readOnly = false }: AdminDashboardV
 
         if (reqError) console.error("Error fetching requests:", reqError);
         else setPendingRequests(requests || []);
+
+        // Fetch approved users (excluding master admin)
+        const { data: users, error: userError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('status', 'approved')
+            .neq('email', 'managerproapp@gmail.com')
+            .order('full_name', { ascending: true });
+
+        if (userError) console.error("Error fetching users:", userError);
+        else setApprovedUsers(users || []);
 
         setLoading(false);
     };
@@ -68,14 +80,17 @@ export default function AdminDashboardView({ readOnly = false }: AdminDashboardV
         };
     }, []);
 
-    const handleUpdateStatus = async (userId: string, newStatus: 'approved' | 'rejected') => {
+    const handleUpdateStatus = async (userId: string, newStatus: 'approved' | 'rejected', newRole?: string) => {
+        const updates: any = { status: newStatus };
+        if (newRole) updates.rol = newRole;
+
         const { error } = await supabase
             .from('profiles')
-            .update({ status: newStatus })
+            .update(updates)
             .eq('id', userId);
 
         if (error) {
-            alert("Error al actualizar estado: " + error.message);
+            alert("Error al actualizar: " + error.message);
         } else {
             fetchData();
         }
@@ -163,20 +178,33 @@ export default function AdminDashboardView({ readOnly = false }: AdminDashboardV
                                         </div>
                                         <div className="flex items-center gap-2">
                                             {!readOnly && (
-                                                <button
-                                                    onClick={() => handleUpdateStatus(req.id, 'rejected')}
-                                                    className="px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 text-[10px] font-black uppercase tracking-widest rounded-xl border border-rose-500/20 transition-all"
-                                                >
-                                                    Denegar
-                                                </button>
-                                            )}
-                                            {!readOnly && (
-                                                <button
-                                                    onClick={() => handleUpdateStatus(req.id, 'approved')}
-                                                    className="px-6 py-2 bg-emerald-500 hover:bg-emerald-400 text-gray-950 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-emerald-500/10"
-                                                >
-                                                    Aceptar
-                                                </button>
+                                                <div className="flex flex-col gap-2">
+                                                    <select
+                                                        id={`role-${req.id}`}
+                                                        className="bg-gray-800 border border-white/10 rounded-lg text-[10px] px-2 py-1 text-gray-300 focus:outline-none focus:border-emerald-500"
+                                                        defaultValue={req.rol || 'alumno'}
+                                                    >
+                                                        <option value="alumno">Alumno</option>
+                                                        <option value="invitado">Profe Complementario</option>
+                                                    </select>
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => handleUpdateStatus(req.id, 'rejected')}
+                                                            className="px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 text-[10px] font-black uppercase tracking-widest rounded-xl border border-rose-500/20 transition-all"
+                                                        >
+                                                            Denegar
+                                                        </button>
+                                                        <button
+                                                            onClick={() => {
+                                                                const sel = document.getElementById(`role-${req.id}`) as HTMLSelectElement;
+                                                                handleUpdateStatus(req.id, 'approved', sel.value);
+                                                            }}
+                                                            className="px-6 py-2 bg-emerald-500 hover:bg-emerald-400 text-gray-950 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-emerald-500/10"
+                                                        >
+                                                            Aceptar
+                                                        </button>
+                                                    </div>
+                                                </div>
                                             )}
                                         </div>
                                     </div>
@@ -186,31 +214,69 @@ export default function AdminDashboardView({ readOnly = false }: AdminDashboardV
                     </div>
 
                     <div className="space-y-8">
+                        {/* Final Unified Workflow Info (Simplified) */}
                         <div className="bg-gradient-to-br from-blue-600/20 to-emerald-600/20 border border-white/10 rounded-[2.5rem] p-10 relative overflow-hidden group">
                             <div className="absolute top-0 right-0 p-8 text-6xl opacity-10 group-hover:scale-110 transition-transform duration-500">🛡️</div>
                             <h3 className="text-xl font-black mb-4 flex items-center gap-3">
-                                Nuevo Sistema de Flujo
+                                Resumen de Flujo
                             </h3>
                             <div className="space-y-4 text-sm text-gray-400 font-medium leading-relaxed">
                                 <p className="flex items-start gap-3">
                                     <span className="text-emerald-400 font-bold">1.</span>
-                                    <span>Los alumnos inician sesión con Google.</span>
+                                    <span>Nuevos usuarios aparecen como <span className="text-amber-400">pendientes</span>.</span>
                                 </p>
                                 <p className="flex items-start gap-3">
                                     <span className="text-emerald-400 font-bold">2.</span>
-                                    <span>Su perfil aparece aquí como <span className="text-amber-400">pendiente</span>.</span>
-                                </p>
-                                <p className="flex items-start gap-3">
-                                    <span className="text-emerald-400 font-bold">3.</span>
-                                    <span>Tú revisas su nombre y correo antes de autorizarles.</span>
+                                    <span>Tú les asignas el rol (**Alumno** o **Invitado**) al aprobarlos.</span>
                                 </p>
                             </div>
                         </div>
 
-                        <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-10 border-dashed flex flex-col items-center justify-center text-center opacity-60 hover:opacity-100 transition-opacity">
-                            <div className="text-4xl mb-4">🚀</div>
-                            <h3 className="font-black text-lg mb-2 text-white">Próximamente: Vista de Brigada</h3>
-                            <p className="text-gray-500 text-xs font-medium max-w-[250px] mx-auto">Podrás entrar en tiempo real a ver el progreso de cada restaurante.</p>
+                        {/* Approved Users Management */}
+                        <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-10 backdrop-blur-sm">
+                            <div className="flex items-center justify-between mb-8">
+                                <div>
+                                    <h3 className="text-2xl font-black text-white">Usuarios Activos</h3>
+                                    <p className="text-gray-500 text-sm font-medium mt-1">Gestión de roles y acceso</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
+                                {approvedUsers.length === 0 ? (
+                                    <p className="text-center py-10 text-gray-600 text-sm italic">No hay otros usuarios activos</p>
+                                ) : (
+                                    approvedUsers.map((user) => (
+                                        <div key={user.id} className="flex items-center justify-between p-4 bg-white/[0.03] border border-white/5 rounded-2xl group">
+                                            <div>
+                                                <div className="text-xs font-black text-white">{user.full_name}</div>
+                                                <div className="text-[10px] text-gray-500">{user.email}</div>
+                                                <div className="mt-1 inline-block px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider bg-white/10 text-gray-400">
+                                                    {user.rol === 'invitado' ? '👀 Profe Complementario' : '🎓 Alumno'}
+                                                </div>
+                                            </div>
+                                            {!readOnly && (
+                                                <div className="flex items-center gap-2">
+                                                    <select
+                                                        onChange={(e) => handleUpdateStatus(user.id, 'approved', e.target.value)}
+                                                        className="bg-transparent border border-white/10 rounded px-2 py-1 text-[9px] text-gray-400 hover:border-white/20 outline-none"
+                                                        value={user.rol || 'alumno'}
+                                                    >
+                                                        <option value="alumno">Alumno</option>
+                                                        <option value="invitado">Invitado</option>
+                                                    </select>
+                                                    <button
+                                                        onClick={() => handleUpdateStatus(user.id, 'rejected')}
+                                                        className="p-2 hover:bg-rose-500/20 text-rose-500/40 hover:text-rose-500 transition-colors rounded-lg"
+                                                        title="Revocar acceso"
+                                                    >
+                                                        🚫
+                                                    </button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))
+                                )}
+                            </div>
                         </div>
                     </div>
                 </div>
