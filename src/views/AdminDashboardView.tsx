@@ -14,8 +14,8 @@ export default function AdminDashboardView() {
     const fetchData = async () => {
         setLoading(true);
         // Fetch stats
-        const { data: students, count: studentCount, error: err1 } = await supabase.from('profiles').select('*', { count: 'exact', head: false }).eq('rol', 'alumno');
-        const { data: teams, count: teamCount, error: err2 } = await supabase.from('teams').select('*', { count: 'exact', head: false });
+        const { count: studentCount, error: err1 } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('rol', 'alumno');
+        const { count: teamCount, error: err2 } = await supabase.from('teams').select('*', { count: 'exact', head: true });
         const { count: taskCount } = await supabase.from('tasks').select('*', { count: 'exact', head: true });
 
         if (err1) console.error("Error fetching students:", err1);
