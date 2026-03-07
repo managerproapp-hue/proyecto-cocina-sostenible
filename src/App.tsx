@@ -49,9 +49,8 @@ function App() {
 
         if (insertError) {
           console.error("Error creating profile mapping", insertError);
-          // Only alert for students if it's a real failure
           if (!isAdmin) {
-            alert("⚠️ Error al registrarse: " + insertError.message + "\nCódigo: " + insertError.code);
+            alert("⚠️ Error al registrarse: " + insertError.message);
           }
 
           if (isAdmin) {
@@ -68,7 +67,7 @@ function App() {
 
       setUserProfile(profile);
 
-      // 2. Routing Logic based on Status and Role
+      // 2. Final Unified Routing Logic
       if (profile?.rol === 'admin') {
         setCurrentView('admin-dashboard');
       } else if (profile?.status === 'pending') {
@@ -135,15 +134,15 @@ function App() {
     if (currentView === 'unauthorized') {
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-950 text-white p-8 text-center">
-          <div className="max-w-md">
+          <div className="max-w-md bg-white/5 border border-white/10 backdrop-blur-xl rounded-[2.5rem] p-12">
             <div className="text-6xl mb-6">🚫</div>
             <h1 className="text-3xl font-black mb-4 text-rose-500">Acceso No Autorizado</h1>
             <p className="text-gray-400 mb-8 leading-relaxed">
-              Tu correo <span className="text-white font-bold">{session.user.email}</span> no está en la lista blanca o ha sido rechazado.
+              Tu correo <span className="text-white font-bold">{session.user.email}</span> no está en la lista blanca o ha sido denegado por el profesor.
             </p>
             <button
               onClick={() => supabase.auth.signOut()}
-              className="px-6 py-3 bg-white/5 border border-white/10 rounded-xl text-gray-400 hover:text-white transition-all"
+              className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl text-gray-400 hover:text-white transition-all font-bold"
             >
               Cerrar Sesión
             </button>
@@ -153,8 +152,6 @@ function App() {
     }
 
     switch (currentView) {
-      case 'landing':
-        return <LandingView onStart={() => setCurrentView('onboarding')} />;
       case 'onboarding':
         return (
           <OnboardingView
@@ -182,7 +179,14 @@ function App() {
           />
         );
       default:
-        return <LandingView onStart={() => setCurrentView('onboarding')} />;
+        // By default, if approved but no team, go to onboarding
+        return (
+          <OnboardingView
+            userId={session.user.id}
+            userEmail={session.user.email || ''}
+            onComplete={() => fetchProfile(session.user.id, session.user.email, session)}
+          />
+        );
     }
   };
 
