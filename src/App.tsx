@@ -19,77 +19,95 @@ function App() {
   const [userProfile, setUserProfile] = useState<any>(null);
 
   const fetchProfile = async (userId: string, userEmail: string | undefined, currentSession: any) => {
-    const isAdmin = userEmail === 'managerproapp@gmail.com';
+    try {
+      const isAdmin = userEmail === 'managerproapp@gmail.com';
 
-    // 1. Get/Create Profile
-    let { data: profile, error: fetchError } = await supabase
-      .from('profiles')
-      .select('*, teams(*)')
-      .eq('id', userId)
-      .single();
-
-    if (fetchError && fetchError.code !== 'PGRST116') {
-      console.error("Error fetching profile:", fetchError);
-    }
-
-    if (!profile) {
-      const { data: newProfile, error: insertError } = await supabase
+      // 1. Get/Create Profile
+      let { data: profile, error: fetchError } = await supabase
         .from('profiles')
-        .insert({
-          id: userId,
-          email: userEmail,
-          full_name: currentSession?.user?.user_metadata?.full_name || userEmail?.split('@')[0],
-          rol: isAdmin ? 'admin' : 'alumno',
-          status: isAdmin ? 'approved' : 'pending'
-        })
-        .select()
+        .select('*, teams(*)')
+        .eq('id', userId)
         .single();
 
-      if (insertError) {
-        console.error("Error creating profile mapping", insertError);
-        if (isAdmin) {
-          profile = { id: userId, email: userEmail, rol: 'admin', status: 'approved' };
-        } else {
-          // Fallback: stay as loading or show error if we can't even create the pending profile
-          setCurrentView('unauthorized');
-          setLoading(false);
-          return;
-        }
-      } else {
-        profile = newProfile;
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        console.error("Error fetching profile:", fetchError);
       }
-    }
 
-    setUserProfile(profile);
+      if (!profile) {
+        console.log("Creating new profile for:", userEmail);
+        const { data: newProfile, error: insertError } = await supabase
+          .from('profiles')
+          .insert({
+            id: userId,
+            email: userEmail,
+            full_name: currentSession?.user?.user_metadata?.full_name || userEmail?.split('@')[0],
+            rol: isAdmin ? 'admin' : 'alumno',
+            status: isAdmin ? 'approved' : 'pending'
+          })
+          .select()
+          .single();
 
-    // 2. Routing Logic based on Status and Role
-    if (profile?.rol === 'admin') {
-      setCurrentView('admin-dashboard');
-    } else if (profile?.status === 'pending') {
-      setCurrentView('waiting-approval');
-    } else if (profile?.status === 'rejected') {
-      setCurrentView('unauthorized');
-    } else if (!profile?.team_id) {
-      setCurrentView('onboarding');
-    } else if (!profile?.brigada_role || !profile?.has_signed_commitment) {
-      setCurrentView('brigada-ficha');
-    } else {
-      setCurrentView('dashboard');
+        if (insertError) {
+          console.error("Error creating profile mapping", insertError);
+          // Only alert for students if it's a real failure
+          if (!isAdmin) {
+            alert("⚠️ Error al registrarse: " + insertError.message + "\nCódigo: " + insertError.code);
+          }
+
+          if (isAdmin) {
+            profile = { id: userId, email: userEmail, rol: 'admin', status: 'approved' };
+          } else {
+            setCurrentView('unauthorized');
+            setLoading(false);
+            return;
+          }
+        } else {
+          profile = newProfile;
+        }
+      }
+
+      setUserProfile(profile);
+
+      // 2. Routing Logic based on Status and Role
+      if (profile?.rol === 'admin') {
+        setCurrentView('admin-dashboard');
+      } else if (profile?.status === 'pending') {
+        setCurrentView('waiting-approval');
+      } else if (profile?.status === 'rejected') {
+        setCurrentView('unauthorized');
+      } else if (!profile?.team_id) {
+        setCurrentView('onboarding');
+      } else if (!profile?.brigada_role || !profile?.has_signed_commitment) {
+        setCurrentView('brigada-ficha');
+      } else {
+        setCurrentView('dashboard');
+      }
+    } catch (err: any) {
+      console.error("Auth flow crash:", err);
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+    const initAuth = async () => {
+      const { data: { session: initialSession } } = await supabase.auth.getSession();
       setSession(initialSession);
-      if (initialSession) fetchProfile(initialSession.user.id, initialSession.user.email, initialSession);
-      else setLoading(false);
-    });
+      if (initialSession) {
+        fetchProfile(initialSession.user.id, initialSession.user.email, initialSession);
+      } else {
+        setLoading(false);
+      }
+    };
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+    initAuth();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
+      console.log("Auth Event:", event, newSession?.user?.email);
       setSession(newSession);
-      if (newSession) fetchProfile(newSession.user.id, newSession.user.email, newSession);
-      else {
+      if (newSession) {
+        fetchProfile(newSession.user.id, newSession.user.email, newSession);
+      } else {
         setUserProfile(null);
         setLoading(false);
       }
@@ -97,8 +115,6 @@ function App() {
 
     return () => subscription.unsubscribe();
   }, []);
-
-
 
   const renderView = () => {
     if (loading) {
@@ -120,21 +136,10 @@ function App() {
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-950 text-white p-8 text-center">
           <div className="max-w-md">
-            <div className="bg-blue-500/5 border border-blue-500/20 rounded-2xl p-4 mb-10 text-left backdrop-blur-sm">
-              <div className="flex gap-3">
-                <span className="text-blue-400">👋</span>
-                <div>
-                  <p className="text-white text-xs font-black uppercase mb-1 tracking-wider">Nuevo Ingreso</p>
-                  <p className="text-gray-400 text-[11px] font-medium leading-relaxed">
-                    Entra con tu cuenta de Google para solicitar acceso. El profesor recibirá tu solicitud y te autorizará en unos minutos.
-                  </p>
-                </div>
-              </div>
-            </div>
             <div className="text-6xl mb-6">🚫</div>
             <h1 className="text-3xl font-black mb-4 text-rose-500">Acceso No Autorizado</h1>
             <p className="text-gray-400 mb-8 leading-relaxed">
-              Tu correo <span className="text-white font-bold">{session.user.email}</span> no está en la lista blanca del profesor. Contacta con él para que te dé acceso.
+              Tu correo <span className="text-white font-bold">{session.user.email}</span> no está en la lista blanca o ha sido rechazado.
             </p>
             <button
               onClick={() => supabase.auth.signOut()}
