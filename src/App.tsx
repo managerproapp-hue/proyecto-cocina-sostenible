@@ -5,10 +5,11 @@ import DashboardView from './views/DashboardView';
 import LoginView from './views/LoginView';
 import OnboardingView from './views/OnboardingView';
 import BrigadaFichaView from './views/BrigadaFichaView';
+import AdminDashboardView from './views/AdminDashboardView';
 import { ZONAS_MURCIA } from './data/zonas';
 import type { Session } from '@supabase/supabase-js';
 
-type View = 'landing' | 'onboarding' | 'brigada-ficha' | 'dashboard' | 'unauthorized' | 'role-selection';
+type View = 'landing' | 'onboarding' | 'brigada-ficha' | 'dashboard' | 'admin-dashboard' | 'unauthorized' | 'role-selection';
 
 function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -55,7 +56,7 @@ function App() {
     setUserProfile(profile);
 
     if (profile?.rol === 'admin') {
-      setCurrentView('dashboard');
+      setCurrentView('admin-dashboard');
     } else if (!profile?.team_id) {
       setCurrentView('onboarding');
     } else if (!profile?.brigada_role || !profile?.has_signed_commitment) {
@@ -141,6 +142,8 @@ function App() {
             onComplete={() => fetchProfile(session.user.id)}
           />
         );
+      case 'admin-dashboard':
+        return <AdminDashboardView />;
       case 'dashboard':
         return (
           <DashboardView
