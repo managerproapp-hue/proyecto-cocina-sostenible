@@ -10,7 +10,7 @@ import WaitingApprovalView from './views/WaitingApprovalView';
 import { ZONAS_MURCIA } from './data/zonas';
 import type { Session } from '@supabase/supabase-js';
 
-type View = 'landing' | 'onboarding' | 'brigada-ficha' | 'dashboard' | 'admin-dashboard' | 'waiting-approval' | 'unauthorized';
+type View = 'landing' | 'onboarding' | 'brigada-ficha' | 'dashboard' | 'admin-dashboard' | 'waiting-approval' | 'unauthorized' | 'invitado-dashboard';
 
 function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -72,6 +72,8 @@ function App() {
       // 3. Routing
       if (profile?.rol === 'admin' || isAdmin) {
         setCurrentView('admin-dashboard');
+      } else if (profile?.rol === 'invitado') {
+        setCurrentView('invitado-dashboard');
       } else if (profile?.status === 'pending') {
         setCurrentView('waiting-approval');
       } else if (profile?.status === 'rejected') {
@@ -179,6 +181,8 @@ function App() {
         );
       case 'admin-dashboard':
         return <AdminDashboardView />;
+      case 'invitado-dashboard':
+        return <AdminDashboardView readOnly={true} />;
       case 'dashboard':
         return (
           <DashboardView

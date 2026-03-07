@@ -1,7 +1,11 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
-export default function AdminDashboardView() {
+interface AdminDashboardViewProps {
+    readOnly?: boolean;
+}
+
+export default function AdminDashboardView({ readOnly = false }: AdminDashboardViewProps) {
     const [stats, setStats] = useState({
         totalStudents: 0,
         totalTeams: 0,
@@ -158,18 +162,22 @@ export default function AdminDashboardView() {
                                             <div className="text-xs font-medium text-gray-500 group-hover:text-gray-400 transition-colors">{req.email}</div>
                                         </div>
                                         <div className="flex items-center gap-2">
-                                            <button
-                                                onClick={() => handleUpdateStatus(req.id, 'rejected')}
-                                                className="px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 text-[10px] font-black uppercase tracking-widest rounded-xl border border-rose-500/20 transition-all"
-                                            >
-                                                Denegar
-                                            </button>
-                                            <button
-                                                onClick={() => handleUpdateStatus(req.id, 'approved')}
-                                                className="px-6 py-2 bg-emerald-500 hover:bg-emerald-400 text-gray-950 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-emerald-500/10"
-                                            >
-                                                Aceptar
-                                            </button>
+                                            {!readOnly && (
+                                                <button
+                                                    onClick={() => handleUpdateStatus(req.id, 'rejected')}
+                                                    className="px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 text-rose-500 text-[10px] font-black uppercase tracking-widest rounded-xl border border-rose-500/20 transition-all"
+                                                >
+                                                    Denegar
+                                                </button>
+                                            )}
+                                            {!readOnly && (
+                                                <button
+                                                    onClick={() => handleUpdateStatus(req.id, 'approved')}
+                                                    className="px-6 py-2 bg-emerald-500 hover:bg-emerald-400 text-gray-950 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-emerald-500/10"
+                                                >
+                                                    Aceptar
+                                                </button>
+                                            )}
                                         </div>
                                     </div>
                                 ))
