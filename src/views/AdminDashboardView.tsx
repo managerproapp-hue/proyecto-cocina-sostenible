@@ -9,11 +9,16 @@ export default function AdminDashboardView() {
     });
 
     useEffect(() => {
-        // Fetch basic stats for now
         const fetchStats = async () => {
-            const { count: studentCount } = await supabase.from('profiles').select('*', { count: 'exact', head: true }).eq('rol', 'alumno');
-            const { count: teamCount } = await supabase.from('teams').select('*', { count: 'exact', head: true });
-            const { count: taskCount } = await supabase.from('tasks').select('*', { count: 'exact', head: true });
+            const { data: students, count: studentCount, error: err1 } = await supabase.from('profiles').select('*', { count: 'exact', head: false }).eq('rol', 'alumno');
+            const { data: teams, count: teamCount, error: err2 } = await supabase.from('teams').select('*', { count: 'exact', head: false });
+            const { count: taskCount, error: err3 } = await supabase.from('tasks').select('*', { count: 'exact', head: true });
+
+            if (err1) alert("Error fetching students: " + JSON.stringify(err1));
+            if (err2) alert("Error fetching teams: " + JSON.stringify(err2));
+
+            console.log("Students data:", students);
+            console.log("Teams data:", teams);
 
             setStats({
                 totalStudents: studentCount || 0,
