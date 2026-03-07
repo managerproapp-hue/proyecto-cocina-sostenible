@@ -10,7 +10,7 @@ import WaitingApprovalView from './views/WaitingApprovalView';
 import { ZONAS_MURCIA } from './data/zonas';
 import type { Session } from '@supabase/supabase-js';
 
-type View = 'landing' | 'onboarding' | 'brigada-ficha' | 'dashboard' | 'admin-dashboard' | 'waiting-approval' | 'unauthorized' | 'role-selection';
+type View = 'landing' | 'onboarding' | 'brigada-ficha' | 'dashboard' | 'admin-dashboard' | 'waiting-approval' | 'unauthorized';
 
 function App() {
   const [session, setSession] = useState<Session | null>(null);
@@ -20,9 +20,10 @@ function App() {
 
   const fetchProfile = async (userId: string, userEmail: string | undefined, currentSession: any) => {
     try {
+      console.log("Fetching profile for:", userEmail);
       const isAdmin = userEmail === 'managerproapp@gmail.com';
 
-      // 1. Get/Create Profile
+      // 1. Get Profile
       let { data: profile, error: fetchError } = await supabase
         .from('profiles')
         .select('*, teams(*)')
@@ -30,11 +31,12 @@ function App() {
         .single();
 
       if (fetchError && fetchError.code !== 'PGRST116') {
-        console.error("Error fetching profile:", fetchError);
+        console.error("Profile Fetch Error:", fetchError);
       }
 
+      // 2. Create if not exists
       if (!profile) {
-        console.log("Creating new profile for:", userEmail);
+        console.log("Profile not found. Creating...");
         const { data: newProfile, error: insertError } = await supabase
           .from('profiles')
           .insert({
@@ -48,27 +50,27 @@ function App() {
           .single();
 
         if (insertError) {
-          console.error("Error creating profile mapping", insertError);
+          console.error("Profile Insert Error:", insertError);
+          // If inserting into DB fails, we show the restricted screen with the error
           if (!isAdmin) {
-            alert("⚠️ Error al registrarse: " + insertError.message);
-          }
-
-          if (isAdmin) {
-            profile = { id: userId, email: userEmail, rol: 'admin', status: 'approved' };
-          } else {
+            alert("⚠️ Error en base de datos: " + insertError.message + "\nCódigo: " + insertError.code);
             setCurrentView('unauthorized');
             setLoading(false);
             return;
           }
+          if (isAdmin) {
+            profile = { id: userId, email: userEmail, rol: 'admin', status: 'approved' };
+          }
         } else {
           profile = newProfile;
+          console.log("Profile created successfully");
         }
       }
 
       setUserProfile(profile);
 
-      // 2. Final Unified Routing Logic
-      if (profile?.rol === 'admin') {
+      // 3. Routing
+      if (profile?.rol === 'admin' || isAdmin) {
         setCurrentView('admin-dashboard');
       } else if (profile?.status === 'pending') {
         setCurrentView('waiting-approval');
@@ -82,14 +84,15 @@ function App() {
         setCurrentView('dashboard');
       }
     } catch (err: any) {
-      console.error("Auth flow crash:", err);
+      console.error("System Crash:", err);
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    const initAuth = async () => {
+    // Initial Session
+    const init = async () => {
       const { data: { session: initialSession } } = await supabase.auth.getSession();
       setSession(initialSession);
       if (initialSession) {
@@ -98,16 +101,18 @@ function App() {
         setLoading(false);
       }
     };
+    init();
 
-    initAuth();
-
+    // Listen to changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, newSession) => {
-      console.log("Auth Event:", event, newSession?.user?.email);
+      console.log("Auth Event:", event);
       setSession(newSession);
       if (newSession) {
+        setLoading(true); // Always show loading when session changes
         fetchProfile(newSession.user.id, newSession.user.email, newSession);
       } else {
         setUserProfile(null);
+        setCurrentView('landing');
         setLoading(false);
       }
     });
@@ -121,7 +126,7 @@ function App() {
         <div className="min-h-screen flex items-center justify-center bg-gray-950 text-white">
           <div className="flex flex-col items-center gap-4">
             <div className="w-12 h-12 border-4 border-emerald-500/20 border-t-emerald-500 rounded-full animate-spin" />
-            <p className="text-gray-500 text-sm font-bold uppercase tracking-widest">Cargando plataforma...</p>
+            <p className="text-gray-500 text-xs font-black uppercase tracking-widest">Iniciando sesión segura...</p>
           </div>
         </div>
       );
@@ -134,17 +139,20 @@ function App() {
     if (currentView === 'unauthorized') {
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-950 text-white p-8 text-center">
-          <div className="max-w-md bg-white/5 border border-white/10 backdrop-blur-xl rounded-[2.5rem] p-12">
-            <div className="text-6xl mb-6">🚫</div>
-            <h1 className="text-3xl font-black mb-4 text-rose-500">Acceso No Autorizado</h1>
-            <p className="text-gray-400 mb-8 leading-relaxed">
-              Tu correo <span className="text-white font-bold">{session.user.email}</span> no está en la lista blanca o ha sido denegado por el profesor.
+          <div className="max-w-md bg-white/5 border border-white/10 backdrop-blur-xl rounded-[3rem] p-12 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-rose-500" />
+            <div className="text-7xl mb-8">🚫</div>
+            <h1 className="text-3xl font-black mb-4 text-white">Acceso Denegado</h1>
+            <p className="text-gray-400 mb-8 leading-relaxed text-sm">
+              Tu cuenta <span className="text-white font-bold">{session.user.email}</span> no ha podido autorizarse.
+              <br /><br />
+              Dile al profesor que revise si hay un error en la base de datos (Trigger/RLS).
             </p>
             <button
               onClick={() => supabase.auth.signOut()}
-              className="w-full py-4 bg-white/5 border border-white/10 rounded-2xl text-gray-400 hover:text-white transition-all font-bold"
+              className="w-full py-4 bg-white/10 hover:bg-white/20 border border-white/10 rounded-2xl text-white font-black uppercase tracking-widest text-[10px] transition-all"
             >
-              Cerrar Sesión
+              Volver al inicio
             </button>
           </div>
         </div>
@@ -179,20 +187,22 @@ function App() {
           />
         );
       default:
-        // By default, if approved but no team, go to onboarding
-        return (
-          <OnboardingView
-            userId={session.user.id}
-            userEmail={session.user.email || ''}
-            onComplete={() => fetchProfile(session.user.id, session.user.email, session)}
-          />
-        );
+        // By default, show LandingView but if we are here we are logged in.
+        // If not admin and not pending, maybe we need onboarding.
+        return <LandingView onStart={() => setCurrentView('onboarding')} />;
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-950">
       {renderView()}
+
+      {/* Debug Footer (Only if session exists) */}
+      {session && (
+        <div className="fixed bottom-4 right-4 text-[8px] text-gray-700 font-mono opacity-50 hover:opacity-100 transition-opacity">
+          USER: {session.user.email} | VIEW: {currentView} | PROFILE: {userProfile ? 'OK' : 'MISSING'}
+        </div>
+      )}
     </div>
   );
 }
