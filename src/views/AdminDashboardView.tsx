@@ -41,6 +41,27 @@ export default function AdminDashboardView() {
 
     useEffect(() => {
         fetchData();
+
+        // Subscripción en tiempo real para nuevas solicitudes
+        const channel = supabase
+            .channel('pending-profiles')
+            .on(
+                'postgres_changes',
+                {
+                    event: '*',
+                    schema: 'public',
+                    table: 'profiles'
+                },
+                (payload) => {
+                    console.log("Cambio en perfiles detectado:", payload);
+                    fetchData();
+                }
+            )
+            .subscribe();
+
+        return () => {
+            supabase.removeChannel(channel);
+        };
     }, []);
 
     const handleUpdateStatus = async (userId: string, newStatus: 'approved' | 'rejected') => {
