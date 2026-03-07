@@ -18,15 +18,19 @@ function App() {
   const [currentView, setCurrentView] = useState<View>('landing');
   const [userProfile, setUserProfile] = useState<any>(null);
 
-  const fetchProfile = async (userId: string, userEmail: string | undefined) => {
+  const fetchProfile = async (userId: string, userEmail: string | undefined, currentSession: any) => {
     const isAdmin = userEmail === 'managerproapp@gmail.com';
 
     // 1. Get/Create Profile
-    let { data: profile } = await supabase
+    let { data: profile, error: fetchError } = await supabase
       .from('profiles')
       .select('*, teams(*)')
       .eq('id', userId)
       .single();
+
+    if (fetchError && fetchError.code !== 'PGRST116') {
+      console.error("Error fetching profile:", fetchError);
+    }
 
     if (!profile) {
       const { data: newProfile, error: insertError } = await supabase
@@ -34,7 +38,7 @@ function App() {
         .insert({
           id: userId,
           email: userEmail,
-          full_name: session?.user?.user_metadata?.full_name || userEmail?.split('@')[0],
+          full_name: currentSession?.user?.user_metadata?.full_name || userEmail?.split('@')[0],
           rol: isAdmin ? 'admin' : 'alumno',
           status: isAdmin ? 'approved' : 'pending'
         })
@@ -46,6 +50,7 @@ function App() {
         if (isAdmin) {
           profile = { id: userId, email: userEmail, rol: 'admin', status: 'approved' };
         } else {
+          // Fallback: stay as loading or show error if we can't even create the pending profile
           setCurrentView('unauthorized');
           setLoading(false);
           return;
@@ -75,15 +80,15 @@ function App() {
   };
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      if (session) fetchProfile(session.user.id, session.user.email);
+    supabase.auth.getSession().then(({ data: { session: initialSession } }) => {
+      setSession(initialSession);
+      if (initialSession) fetchProfile(initialSession.user.id, initialSession.user.email, initialSession);
       else setLoading(false);
     });
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      if (session) fetchProfile(session.user.id, session.user.email);
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+      setSession(newSession);
+      if (newSession) fetchProfile(newSession.user.id, newSession.user.email, newSession);
       else {
         setUserProfile(null);
         setLoading(false);
@@ -115,6 +120,17 @@ function App() {
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-950 text-white p-8 text-center">
           <div className="max-w-md">
+            <div className="bg-blue-500/5 border border-blue-500/20 rounded-2xl p-4 mb-10 text-left backdrop-blur-sm">
+              <div className="flex gap-3">
+                <span className="text-blue-400">👋</span>
+                <div>
+                  <p className="text-white text-xs font-black uppercase mb-1 tracking-wider">Nuevo Ingreso</p>
+                  <p className="text-gray-400 text-[11px] font-medium leading-relaxed">
+                    Entra con tu cuenta de Google para solicitar acceso. El profesor recibirá tu solicitud y te autorizará en unos minutos.
+                  </p>
+                </div>
+              </div>
+            </div>
             <div className="text-6xl mb-6">🚫</div>
             <h1 className="text-3xl font-black mb-4 text-rose-500">Acceso No Autorizado</h1>
             <p className="text-gray-400 mb-8 leading-relaxed">
@@ -139,7 +155,7 @@ function App() {
           <OnboardingView
             userId={session.user.id}
             userEmail={session.user.email || ''}
-            onComplete={() => fetchProfile(session.user.id, session.user.email)}
+            onComplete={() => fetchProfile(session.user.id, session.user.email, session)}
           />
         );
       case 'waiting-approval':
@@ -148,7 +164,7 @@ function App() {
         return (
           <BrigadaFichaView
             userId={session.user.id}
-            onComplete={() => fetchProfile(session.user.id, session.user.email)}
+            onComplete={() => fetchProfile(session.user.id, session.user.email, session)}
           />
         );
       case 'admin-dashboard':

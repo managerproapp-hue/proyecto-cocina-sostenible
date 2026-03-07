@@ -41,14 +41,14 @@ export default function LoginView() {
                     Proyecto Intermodular · Carta Sostenible 2026/27
                 </p>
 
-                {/* Info Card */}
-                <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-2xl p-4 mb-10 text-left">
-                    <div className="flex gap-3">
-                        <span className="text-emerald-400">🛡️</span>
+                {/* Info Card - Welcoming and clear */}
+                <div className="bg-blue-500/5 border border-blue-500/20 rounded-2xl p-6 mb-10 text-left backdrop-blur-sm border-dashed">
+                    <div className="flex gap-4">
+                        <span className="text-2xl">👋</span>
                         <div>
-                            <p className="text-white text-xs font-bold uppercase mb-1">Acceso Restringido</p>
-                            <p className="text-gray-400 text-[11px] leading-relaxed">
-                                Solo usuarios autorizados en la lista blanca del profesor pueden acceder a los datos del proyecto.
+                            <p className="text-white text-xs font-black uppercase mb-1 tracking-widest">Nuevo Ingreso</p>
+                            <p className="text-gray-400 text-[11px] font-medium leading-relaxed">
+                                Entra con tu cuenta de Google para solicitar acceso. El profesor recibirá tu solicitud y te autorizará en unos minutos.
                             </p>
                         </div>
                     </div>
