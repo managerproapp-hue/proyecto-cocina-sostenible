@@ -1,6 +1,8 @@
+import { supabase } from '../lib/supabaseClient';
 import type { Zone } from '../types';
 
 interface DashboardViewProps {
+    userProfile: any;
     zone: Zone | null;
     onChangeZone: () => void;
 }
@@ -44,7 +46,7 @@ const TASKS = [
     },
 ];
 
-export default function DashboardView({ zone, onChangeZone }: DashboardViewProps) {
+export default function DashboardView({ userProfile, zone, onChangeZone }: DashboardViewProps) {
     const colorMap: Record<string, string> = {
         emerald: 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400',
         blue: 'border-blue-500/30 bg-blue-500/5 text-blue-400',
@@ -57,6 +59,40 @@ export default function DashboardView({ zone, onChangeZone }: DashboardViewProps
         blue: 'bg-blue-500/10 text-blue-400',
         amber: 'bg-amber-500/10 text-amber-400',
         rose: 'bg-rose-500/10 text-rose-400',
+    };
+
+    const handleDownloadMyData = async () => {
+        try {
+            const teamId = userProfile?.team_id;
+            const data: any = {
+                perfil: userProfile,
+                equipo: null,
+                tareas: [],
+                platos: []
+            };
+
+            if (teamId) {
+                const { data: team } = await supabase.from('teams').select('*').eq('id', teamId).single();
+                const { data: tasks } = await supabase.from('tasks').select('*').eq('team_id', teamId);
+                const { data: platos } = await supabase.from('platos').select('*').eq('team_id', teamId);
+
+                data.equipo = team;
+                data.tareas = tasks || [];
+                data.platos = platos || [];
+            }
+
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `mis_datos_proyecto_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            alert("Error al descargar tus datos");
+        }
     };
 
     return (
@@ -82,18 +118,30 @@ export default function DashboardView({ zone, onChangeZone }: DashboardViewProps
                         </div>
                     </div>
 
-                    {zone && (
+                    <div className="flex items-center gap-3">
                         <button
-                            onClick={onChangeZone}
-                            className="flex items-center gap-2 text-xs text-gray-500 hover:text-white border border-white/10 hover:border-white/20 px-3 py-1.5 rounded-lg transition-all"
+                            onClick={handleDownloadMyData}
+                            className="p-2 text-gray-500 hover:text-emerald-400 transition-colors"
+                            title="Descargar mis datos y proyecto"
                         >
-                            <span>{zone.emoji}</span>
-                            <span>{zone.name}</span>
-                            <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
                         </button>
-                    )}
+
+                        {zone && (
+                            <button
+                                onClick={onChangeZone}
+                                className="flex items-center gap-2 text-xs text-gray-500 hover:text-white border border-white/10 hover:border-white/20 px-3 py-1.5 rounded-lg transition-all"
+                            >
+                                <span>{zone.emoji}</span>
+                                <span>{zone.name}</span>
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z" />
+                                </svg>
+                            </button>
+                        )}
+                    </div>
                 </div>
             </header>
 

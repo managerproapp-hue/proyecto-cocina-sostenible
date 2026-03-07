@@ -176,6 +176,8 @@ function App() {
         return (
           <BrigadaFichaView
             userId={session.user.id}
+            teamId={userProfile?.team_id}
+            isCreator={userProfile?.rol === 'admin' || (userProfile?.team_id && !userProfile?.brigada_role)} // Simplification for now
             onComplete={() => fetchProfile(session.user.id, session.user.email, session)}
           />
         );
@@ -186,6 +188,7 @@ function App() {
       case 'dashboard':
         return (
           <DashboardView
+            userProfile={userProfile}
             zone={userProfile?.teams?.zone_id ? ZONAS_MURCIA.find(z => z.id === userProfile.teams.zone_id) || null : null}
             onChangeZone={() => setCurrentView('onboarding')}
           />

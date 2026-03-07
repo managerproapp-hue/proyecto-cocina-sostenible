@@ -1,8 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
 interface BrigadaFichaViewProps {
     userId: string;
+    teamId?: string; // Add teamId prop
+    isCreator?: boolean; // Add isCreator flag
     onComplete: () => void;
 }
 
@@ -64,11 +66,42 @@ const BRIGADA_ROLES = [
     }
 ];
 
-export default function BrigadaFichaView({ userId, onComplete }: BrigadaFichaViewProps) {
-    const [selectedRoleId, setSelectedRoleId] = useState<string | null>(null);
+export default function BrigadaFichaView({ userId, teamId, isCreator = false, onComplete }: BrigadaFichaViewProps) {
+    const [selectedRoleId, setSelectedRoleId] = useState<string | null>(isCreator ? 'coordinador' : null);
+    const [roleNames, setRoleNames] = useState<Record<string, string>>({
+        coordinador: '',
+        visual: '',
+        digital: '',
+        comunicacion: '',
+        produccion: ''
+    });
+    const [teamData, setTeamData] = useState<any>(null);
     const [signed, setSigned] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    useEffect(() => {
+        const fetchTeamData = async () => {
+            if (!teamId) return;
+            const { data, error: fetchError } = await supabase
+                .from('teams')
+                .select('*')
+                .eq('id', teamId)
+                .single();
+
+            if (!fetchError && data) {
+                setTeamData(data);
+                if (data.role_assignments) {
+                    setRoleNames(data.role_assignments);
+                }
+            }
+        };
+        fetchTeamData();
+    }, [teamId]);
+
+    const handleNameChange = (roleId: string, name: string) => {
+        setRoleNames(prev => ({ ...prev, [roleId]: name }));
+    };
 
     const handleSubmit = async () => {
         if (!selectedRoleId || !signed) return;
@@ -76,16 +109,29 @@ export default function BrigadaFichaView({ userId, onComplete }: BrigadaFichaVie
         setError(null);
 
         try {
+            // 1. Update Profile
             const { error: profileError } = await supabase
                 .from('profiles')
                 .update({
                     brigada_role: selectedRoleId,
                     has_signed_commitment: true,
+                    full_name: isCreator ? roleNames.coordinador : undefined, // Update own name if creator
                     updated_at: new Date().toISOString()
                 })
                 .eq('id', userId);
 
             if (profileError) throw profileError;
+
+            // 2. If creator, save all assignments to the team
+            if (isCreator && teamId) {
+                const { error: teamError } = await supabase
+                    .from('teams')
+                    .update({ role_assignments: roleNames })
+                    .eq('id', teamId);
+
+                if (teamError) throw teamError;
+            }
+
             onComplete();
         } catch (err: any) {
             setError(err.message);
@@ -112,34 +158,64 @@ export default function BrigadaFichaView({ userId, onComplete }: BrigadaFichaVie
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-12">
                     {BRIGADA_ROLES.map((role) => (
-                        <button
+                        <div
                             key={role.id}
-                            onClick={() => setSelectedRoleId(role.id)}
                             className={`relative p-6 rounded-2xl border-2 transition-all flex flex-col text-left group ${selectedRoleId === role.id
                                 ? 'border-emerald-500 bg-emerald-500/10'
                                 : 'border-white/5 bg-white/5 hover:border-white/20'
                                 }`}
                         >
-                            <div className="text-3xl mb-4">{role.icon}</div>
-                            <h4 className="font-black text-lg leading-tight mb-1">{role.title}</h4>
-                            <p className="text-emerald-500 text-xs font-bold uppercase tracking-widest mb-4">{role.subtitle}</p>
+                            {!isCreator ? (
+                                <button
+                                    onClick={() => setSelectedRoleId(role.id)}
+                                    className="absolute inset-0 z-0"
+                                />
+                            ) : null}
 
-                            <ul className="space-y-2 flex-1">
-                                {role.tasks.map((task, i) => (
-                                    <li key={i} className="text-[11px] text-gray-500 flex gap-2">
-                                        <span className="text-emerald-500">•</span> {task}
-                                    </li>
-                                ))}
-                            </ul>
+                            <div className="relative z-10 flex flex-col h-full">
+                                <div className="text-3xl mb-4">{role.icon}</div>
+                                <h4 className="font-black text-lg leading-tight mb-1">{role.title}</h4>
+                                <p className="text-emerald-500 text-xs font-bold uppercase tracking-widest mb-4">{role.subtitle}</p>
 
-                            {selectedRoleId === role.id && (
-                                <div className="absolute top-4 right-4 text-emerald-500">
-                                    <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                                    </svg>
-                                </div>
-                            )}
-                        </button>
+                                {isCreator ? (
+                                    <div className="mb-4">
+                                        <label className="block text-[10px] uppercase font-bold text-gray-500 mb-1 ml-1">Nombre del Alumno/a</label>
+                                        <input
+                                            type="text"
+                                            value={roleNames[role.id]}
+                                            onChange={(e) => handleNameChange(role.id, e.target.value)}
+                                            placeholder="Nombre y Apellidos"
+                                            className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 transition-colors"
+                                        />
+                                    </div>
+                                ) : (
+                                    <div className="mb-4">
+                                        <p className="text-[10px] uppercase font-bold text-gray-500 mb-1 ml-1 flex items-center gap-2">
+                                            {roleNames[role.id] ? (
+                                                <>👤 {roleNames[role.id]}</>
+                                            ) : (
+                                                <>⚪ Sin asignar</>
+                                            )}
+                                        </p>
+                                        <ul className="space-y-2 flex-1">
+                                            {role.tasks.map((task, i) => (
+                                                <li key={i} className="text-[11px] text-gray-400 flex gap-2">
+                                                    <span className="text-emerald-500/50">•</span> {task}
+                                                </li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                )}
+
+                                {selectedRoleId === role.id && !isCreator && (
+                                    <div className="absolute top-0 right-0 text-emerald-500">
+                                        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                        </svg>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     ))}
                 </div>
 

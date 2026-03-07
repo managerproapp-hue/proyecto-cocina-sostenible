@@ -13,6 +13,7 @@ export default function AdminDashboardView({ readOnly = false }: AdminDashboardV
     });
     const [pendingRequests, setPendingRequests] = useState<any[]>([]);
     const [approvedUsers, setApprovedUsers] = useState<any[]>([]);
+    const [rejectedUsers, setRejectedUsers] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
 
     const fetchData = async () => {
@@ -51,6 +52,16 @@ export default function AdminDashboardView({ readOnly = false }: AdminDashboardV
 
         if (userError) console.error("Error fetching users:", userError);
         else setApprovedUsers(users || []);
+
+        // Fetch rejected users
+        const { data: rejected, error: rejError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('status', 'rejected')
+            .order('updated_at', { ascending: false });
+
+        if (rejError) console.error("Error fetching rejected:", rejError);
+        else setRejectedUsers(rejected || []);
 
         setLoading(false);
     };
@@ -93,6 +104,64 @@ export default function AdminDashboardView({ readOnly = false }: AdminDashboardV
             alert("Error al actualizar: " + error.message);
         } else {
             fetchData();
+        }
+    };
+
+    const handleDownloadBackup = async () => {
+        try {
+            const tables = ['profiles', 'teams', 'tasks', 'platos', 'user_suggestions', 'task_permissions', 'config'];
+            const backupData: any = {};
+
+            for (const table of tables) {
+                const { data, error } = await supabase.from(table).select('*');
+                if (error) console.error(`Error backup ${table}:`, error);
+                else backupData[table] = data;
+            }
+
+            const blob = new Blob([JSON.stringify(backupData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `backup_sistema_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        } catch (err) {
+            alert("Error al generar copia de seguridad");
+        }
+    };
+
+    const handleNuclearReset = async () => {
+        const confirm1 = window.confirm("⚠️ ATENCIÓN: Estás a punto de borrar TODOS los datos del sistema (equipos, platos, tareas, mensajes). ¿Estás seguro?");
+        if (!confirm1) return;
+
+        const confirm2 = window.prompt("Para confirmar esta acción DESTRUCTIVA, escribe 'RESETEAR TODO' en mayúsculas:");
+        if (confirm2 !== 'RESETEAR TODO') {
+            alert("Confirmación incorrecta. Operación cancelada.");
+            return;
+        }
+
+        setLoading(true);
+        try {
+            // Borrado en cascada (tablas hijas primero)
+            await supabase.from('task_permissions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+            await supabase.from('user_suggestions').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+            await supabase.from('tasks').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+            await supabase.from('platos').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+            // Perfiles (excepto admin)
+            await supabase.from('profiles').delete().neq('email', 'managerproapp@gmail.com');
+
+            // Equipos (ahora que no hay perfiles asociados que no sean admin)
+            await supabase.from('teams').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+
+            alert("✅ Sistema reseteado correctamente. Solo queda tu cuenta de administrador.");
+            fetchData();
+        } catch (err: any) {
+            alert("Error durante el reseteo: " + err.message);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -211,6 +280,39 @@ export default function AdminDashboardView({ readOnly = false }: AdminDashboardV
                                 ))
                             )}
                         </div>
+
+                        {/* Rejected Users Management */}
+                        <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-10 backdrop-blur-sm opacity-60 hover:opacity-100 transition-opacity">
+                            <div className="flex items-center justify-between mb-8">
+                                <div>
+                                    <h3 className="text-xl font-black text-white/50">Usuarios Denegados / Expulsados</h3>
+                                    <p className="text-gray-600 text-[10px] font-medium mt-1">Usuarios sin acceso al sistema</p>
+                                </div>
+                            </div>
+
+                            <div className="space-y-3 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
+                                {rejectedUsers.length === 0 ? (
+                                    <p className="text-center py-6 text-gray-700 text-[10px] italic">No hay usuarios denegados</p>
+                                ) : (
+                                    rejectedUsers.map((user) => (
+                                        <div key={user.id} className="flex items-center justify-between p-3 bg-rose-500/5 border border-rose-500/10 rounded-xl group">
+                                            <div>
+                                                <div className="text-[10px] font-bold text-gray-400">{user.full_name}</div>
+                                                <div className="text-[9px] text-gray-600">{user.email}</div>
+                                            </div>
+                                            {!readOnly && (
+                                                <button
+                                                    onClick={() => handleUpdateStatus(user.id, 'approved', user.rol || 'alumno')}
+                                                    className="px-3 py-1 bg-white/5 hover:bg-emerald-500/20 text-gray-500 hover:text-emerald-500 text-[8px] font-black uppercase tracking-widest rounded-lg border border-white/5 transition-all"
+                                                >
+                                                    Rehabilitar
+                                                </button>
+                                            )}
+                                        </div>
+                                    ))
+                                )}
+                            </div>
+                        </div>
                     </div>
 
                     <div className="space-y-8">
@@ -278,6 +380,39 @@ export default function AdminDashboardView({ readOnly = false }: AdminDashboardV
                                 )}
                             </div>
                         </div>
+
+                        {/* Sección de Mantenimiento */}
+                        {!readOnly && (
+                            <div className="bg-rose-500/5 border border-rose-500/20 rounded-[2.5rem] p-10 backdrop-blur-sm">
+                                <div className="flex items-center gap-4 mb-8">
+                                    <div className="text-4xl">⚙️</div>
+                                    <div>
+                                        <h3 className="text-2xl font-black text-white">Mantenimiento Crítico</h3>
+                                        <p className="text-rose-500/60 text-xs font-bold uppercase tracking-wider">Zona de Seguridad · Solo Administradores</p>
+                                    </div>
+                                </div>
+
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                    <button
+                                        onClick={handleDownloadBackup}
+                                        className="flex flex-col items-center justify-center p-8 bg-white/5 border border-white/10 rounded-3xl hover:bg-white/10 transition-all group"
+                                    >
+                                        <div className="text-3xl mb-3 group-hover:scale-110 transition-transform">💾</div>
+                                        <div className="text-sm font-black text-white">Copia de Seguridad</div>
+                                        <div className="text-[10px] text-gray-500 mt-1">Descarga JSON de todos los datos</div>
+                                    </button>
+
+                                    <button
+                                        onClick={handleNuclearReset}
+                                        className="flex flex-col items-center justify-center p-8 bg-rose-500/5 border border-rose-500/10 rounded-3xl hover:bg-rose-500/20 transition-all group"
+                                    >
+                                        <div className="text-3xl mb-3 group-hover:animate-bounce">☢️</div>
+                                        <div className="text-sm font-black text-rose-500">Reseteo Nuclear</div>
+                                        <div className="text-[10px] text-rose-500/40 mt-1 uppercase font-bold tracking-tighter">Borrar sistema excepto Admin</div>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </main>
