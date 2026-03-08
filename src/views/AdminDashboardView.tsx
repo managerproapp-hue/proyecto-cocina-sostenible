@@ -232,7 +232,15 @@ export default function AdminDashboardView({ readOnly = false, onEnterMaintenanc
                                             {user.rol === 'invitado' ? 'Invitado' : 'Alumno'}
                                         </div>
                                     </div>
-                                    <button onClick={() => handleUpdateStatus(user.id, 'rejected')} className="text-gray-700 hover:text-rose-500 transition-colors">🚫</button>
+                                    <div className="flex items-center gap-3">
+                                        <button
+                                            onClick={() => onImpersonate?.(user)}
+                                            className="text-[8px] font-black uppercase tracking-widest bg-blue-600/10 hover:bg-blue-600 text-blue-400 hover:text-white px-3 py-1.5 rounded-lg border border-blue-600/20 transition-all active:scale-95"
+                                        >
+                                            Suplantar
+                                        </button>
+                                        <button onClick={() => handleUpdateStatus(user.id, 'rejected')} className="text-gray-700 hover:text-rose-500 transition-colors">🚫</button>
+                                    </div>
                                 </div>
                             ))}
                         </div>
