@@ -186,7 +186,10 @@ function App() {
       case 'admin-dashboard':
         return <AdminDashboardView
           onEnterMaintenance={() => setCurrentView('maintenance')}
-          onImpersonate={(user: any) => setImpersonatedUser(user)}
+          onImpersonate={(user: any) => {
+            setImpersonatedUser(user);
+            setCurrentView('dashboard');
+          }}
         />;
       case 'invitado-dashboard':
         return <AdminDashboardView readOnly={true} />;
@@ -221,7 +224,10 @@ function App() {
             <span>MODO AYUDA: Visualizando a <span className="underline decoration-2">{impersonatedUser.full_name}</span></span>
           </div>
           <button
-            onClick={() => setImpersonatedUser(null)}
+            onClick={() => {
+              setImpersonatedUser(null);
+              setCurrentView('admin-dashboard');
+            }}
             className="bg-gray-950 text-white px-4 py-1 rounded-full hover:bg-gray-800 transition-colors"
           >
             Volver al Panel Admin
