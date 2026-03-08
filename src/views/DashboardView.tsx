@@ -72,6 +72,9 @@ export default function DashboardView({ userProfile, zone, isImpersonated = fals
     });
     const [taskStatuses, setTaskStatuses] = useState<Record<number, string>>({});
     const [lockedTasks, setLockedTasks] = useState<Record<number, boolean>>({});
+    const [selectedTask, setSelectedTask] = useState<any>(null);
+    const [taskContent, setTaskContent] = useState('');
+    const [saving, setSaving] = useState(false);
 
     useEffect(() => {
         const fetchTasks = async () => {
@@ -97,14 +100,51 @@ export default function DashboardView({ userProfile, zone, isImpersonated = fals
         fetchTasks();
     }, [userProfile]);
 
-    const handleTaskClick = (taskId: number) => {
+    const handleTaskClick = async (taskId: number) => {
+        const task = TASKS.find(t => t.id === taskId);
+        if (!task) return;
+
         const isLocked = lockedTasks[taskId];
         if (isLocked && !isImpersonated) {
             alert("Esta fase está bloqueada. Contacta con el profesor si necesitas modificarla.");
-            return;
+            // We still let them see it, but in read-only mode
         }
-        // In a real app, this would navigate to a detailed view or open a modal
-        alert(`Abriendo detalles de la Fase ${taskId}... ${isImpersonated ? '(Modo Edición Admin)' : ''}`);
+
+        setSelectedTask(task);
+
+        // Fetch existing content
+        const { data } = await supabase
+            .from('tasks')
+            .select('content')
+            .eq('team_id', userProfile?.team_id)
+            .eq('task_number', taskId)
+            .single();
+
+        setTaskContent(data?.content || '');
+    };
+
+    const handleSaveTask = async () => {
+        if (!selectedTask || !userProfile?.team_id) return;
+        setSaving(true);
+        try {
+            const { error } = await supabase
+                .from('tasks')
+                .upsert({
+                    team_id: userProfile.team_id,
+                    task_number: selectedTask.id,
+                    content: taskContent,
+                    status: 'in_progress',
+                    updated_at: new Date().toISOString()
+                }, { onConflict: 'team_id,task_number' });
+
+            if (error) throw error;
+            setTaskStatuses(prev => ({ ...prev, [selectedTask.id]: 'in_progress' }));
+            setSelectedTask(null);
+        } catch (err: any) {
+            alert("Error al guardar: " + err.message);
+        } finally {
+            setSaving(false);
+        }
     };
 
     const toggleLock = async (taskId: number) => {
@@ -257,46 +297,90 @@ export default function DashboardView({ userProfile, zone, isImpersonated = fals
                         <div
                             key={task.id}
                             onClick={() => handleTaskClick(task.id)}
-                            className={`relative p-6 rounded-2xl border-2 transition-all duration-300 hover:-translate-y-1 cursor-pointer group ${colorMap[task.color]} ${lockedTasks[task.id] ? 'opacity-80' : ''}`}
+                            className={`relative p-6 rounded-3xl border-2 transition-all duration-500 hover:-translate-y-2 cursor-pointer group shadow-xl hover:shadow-2xl ${colorMap[task.color]} ${lockedTasks[task.id] ? 'opacity-90 grayscale-[0.2]' : ''}`}
                         >
-                            <div className="flex items-start gap-4 mb-4">
-                                <div className={`text-3xl flex flex-col items-center gap-2`}>
+                            <div className="flex items-start gap-5 mb-5">
+                                <div className="text-4xl flex flex-col items-center gap-3 bg-white/5 p-4 rounded-2xl border border-white/5 group-hover:scale-110 transition-transform">
                                     {task.icon}
                                     {lockedTasks[task.id] && (
-                                        <span className="text-xl" title="Fase Bloqueada">🔒</span>
+                                        <div className="absolute -top-3 -right-3 bg-rose-500 text-white w-8 h-8 rounded-full flex items-center justify-center shadow-lg border-2 border-gray-950 text-sm animate-bounce" title="Fase Bloqueada">🔒</div>
                                     )}
                                 </div>
                                 <div className="flex-1">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <div className={`inline-block text-xs font-black px-2 py-0.5 rounded-full ${badgeMap[task.color]}`}>
+                                    <div className="flex items-center justify-between mb-3">
+                                        <div className={`inline-block text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-widest ${badgeMap[task.color]} shadow-sm`}>
                                             FASE {task.step}
                                         </div>
                                         {isImpersonated && (
                                             <button
                                                 onClick={(e) => { e.stopPropagation(); toggleLock(task.id); }}
-                                                className="text-[10px] bg-white/10 hover:bg-white/20 px-2 py-1 rounded-md border border-white/10 transition-colors"
+                                                className="text-[9px] font-black uppercase tracking-widest bg-gray-950/40 hover:bg-gray-950/60 text-white px-3 py-1.5 rounded-lg border border-white/10 transition-all active:scale-90"
                                             >
-                                                {lockedTasks[task.id] ? '🔓 Desbloquear' : '🔒 Bloquear'}
+                                                {lockedTasks[task.id] ? '🔓 Abrir' : '🔒 Cerrar'}
                                             </button>
                                         )}
                                     </div>
-                                    <h3 className="text-white font-bold text-lg leading-tight">{task.title}</h3>
+                                    <h3 className="text-white font-black text-lg tracking-tight leading-tight group-hover:text-emerald-400 transition-colors uppercase">{task.title}</h3>
                                 </div>
                             </div>
-                            <p className="text-gray-500 text-sm leading-relaxed">{task.description}</p>
-                            <div className="mt-5 flex items-center justify-between">
-                                <span className={`text-[10px] border px-2 py-1 rounded-full font-bold uppercase tracking-widest ${taskStatuses[task.id] === 'completed' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400' : 'text-gray-600 border-white/10'}`}>
-                                    {taskStatuses[task.id] === 'completed' ? 'Completado' : (taskStatuses[task.id] || 'Pendiente')}
-                                </span>
+                            <p className="text-gray-500 text-xs leading-relaxed font-medium mb-6 line-clamp-2">{task.description}</p>
+                            <div className="flex items-center justify-between pt-5 border-t border-white/5 mt-auto">
                                 <div className="flex items-center gap-2">
-                                    <span className="text-[10px] text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity uppercase font-black tracking-widest">Entrar</span>
-                                    <svg className="w-5 h-5 text-gray-700 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                                    </svg>
+                                    <div className={`w-2 h-2 rounded-full animate-pulse ${taskStatuses[task.id] === 'completed' ? 'bg-emerald-500' : 'bg-amber-500'}`} />
+                                    <span className={`text-[10px] font-black uppercase tracking-widest ${taskStatuses[task.id] === 'completed' ? 'text-emerald-400' : 'text-gray-500'}`}>
+                                        {taskStatuses[task.id] === 'completed' ? 'Completado' : (taskStatuses[task.id]?.replace('_', ' ') || 'Pendiente')}
+                                    </span>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <span className="text-[10px] text-emerald-500 opacity-0 group-hover:opacity-100 transition-all uppercase font-black tracking-widest translate-x-2 group-hover:translate-x-0">Abrir Fase</span>
+                                    <div className="w-8 h-8 rounded-full bg-white/5 border border-white/10 flex items-center justify-center group-hover:bg-emerald-500 group-hover:text-gray-950 transition-all">
+                                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                        </svg>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     ))}
+                </div>
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6 mb-12">
+                    <div className="flex items-center gap-6">
+                        <div className="w-16 h-16 bg-white/5 border border-white/10 rounded-[1.5rem] flex items-center justify-center text-4xl shadow-xl">
+                            {userProfile?.teams?.name?.[0] || 'B'}
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-3 mb-1">
+                                <h1 className="text-4xl font-black text-white tracking-tight uppercase">
+                                    {userProfile?.teams?.name || 'Mi Brigada'}
+                                </h1>
+                                <span className="px-3 py-1 bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-[9px] font-black uppercase tracking-widest rounded-full">
+                                    Activa
+                                </span>
+                            </div>
+                            <p className="text-gray-500 font-medium text-sm">
+                                {zone?.name || 'Zona no seleccionada'} · {userProfile?.teams?.invite_code || '---'}
+                            </p>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                        <button
+                            onClick={() => setShowDownloadOptions(true)}
+                            className="flex items-center gap-3 px-6 py-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl transition-all group active:scale-95 shadow-lg"
+                        >
+                            <span className="text-xl group-hover:scale-125 transition-transform">📥</span>
+                            <div className="text-left">
+                                <div className="text-[10px] font-black uppercase tracking-[0.2em] text-white">Descargar Mis Datos</div>
+                                <div className="text-[9px] text-gray-500 font-bold uppercase">Backup Personal</div>
+                            </div>
+                        </button>
+                        <button
+                            onClick={onChangeZone}
+                            className="p-4 bg-white/5 hover:bg-white/10 border border-white/10 rounded-2xl transition-all active:scale-95 shadow-lg text-gray-500 hover:text-white"
+                            title="Cambiar Zona"
+                        >
+                            ⚙️
+                        </button>
+                    </div>
                 </div>
 
                 {/* Project Resources & Actions */}
@@ -378,6 +462,64 @@ export default function DashboardView({ userProfile, zone, isImpersonated = fals
                     <p className="text-gray-600 text-[10px] uppercase font-black tracking-[0.2em]">Brigada Digital · IES La Flota · 2026/27</p>
                 </div>
             </main>
+
+            {/* Task Detail Modal */}
+            {selectedTask && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-gray-950/90 backdrop-blur-md animate-in fade-in duration-300">
+                    <div className="bg-gray-900 border border-white/10 rounded-[3rem] p-10 max-w-2xl w-full shadow-2xl relative overflow-hidden">
+                        <div className={`absolute top-0 left-0 w-full h-1 bg-${selectedTask.color}-500`} />
+
+                        <div className="flex items-center justify-between mb-8">
+                            <div className="flex items-center gap-4">
+                                <span className="text-4xl">{selectedTask.icon}</span>
+                                <div>
+                                    <h3 className="text-2xl font-black text-white">{selectedTask.title}</h3>
+                                    <p className="text-gray-500 text-[10px] uppercase font-bold tracking-widest">Fase {selectedTask.step} · IES La Flota</p>
+                                </div>
+                            </div>
+                            <button onClick={() => setSelectedTask(null)} className="text-gray-500 hover:text-white transition-colors text-xl">✕</button>
+                        </div>
+
+                        <p className="text-gray-400 text-sm mb-6 leading-relaxed italic border-l-2 border-white/5 pl-4">
+                            {selectedTask.description}
+                        </p>
+
+                        <div className="space-y-4 mb-8">
+                            <label className="block text-xs font-black uppercase tracking-widest text-emerald-500/70 mb-2">Desarrollo de la Fase:</label>
+                            <textarea
+                                value={taskContent}
+                                onChange={(e) => setTaskContent(e.target.value)}
+                                disabled={lockedTasks[selectedTask.id] && !isImpersonated}
+                                className="w-full h-64 bg-white/5 border border-white/10 rounded-2xl p-6 text-sm text-white placeholder-gray-700 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 outline-none transition-all resize-none shadow-inner"
+                                placeholder="Describe aquí el trabajo realizado por la brigada para esta fase..."
+                            />
+                            {lockedTasks[selectedTask.id] && !isImpersonated && (
+                                <div className="bg-rose-500/10 border border-rose-500/20 text-rose-500 text-[10px] p-3 rounded-xl font-bold text-center">
+                                    🔒 Esta fase ha sido validada y está bloqueada para edición.
+                                </div>
+                            )}
+                        </div>
+
+                        <div className="flex gap-4">
+                            <button
+                                onClick={() => setSelectedTask(null)}
+                                className="flex-1 py-4 bg-white/5 hover:bg-white/10 text-gray-500 font-black uppercase tracking-widest text-[10px] rounded-2xl transition-all"
+                            >
+                                Cerrar
+                            </button>
+                            {(!lockedTasks[selectedTask.id] || isImpersonated) && (
+                                <button
+                                    onClick={handleSaveTask}
+                                    disabled={saving}
+                                    className="flex-[2] py-4 bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-black uppercase tracking-widest text-[10px] rounded-2xl transition-all shadow-lg shadow-emerald-500/20"
+                                >
+                                    {saving ? 'Guardando...' : 'Guardar Progreso'}
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

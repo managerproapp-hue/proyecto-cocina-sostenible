@@ -82,15 +82,15 @@ export default function AdminDashboardView({ readOnly = false, onEnterMaintenanc
                     </div>
 
                     {!readOnly && (
-                        <div className="flex gap-3">
+                        <div className="flex gap-4 p-2 bg-rose-500/5 rounded-3xl border border-rose-500/10 active:scale-95 transition-all">
                             <button
                                 onClick={onEnterMaintenance}
-                                className="flex items-center gap-3 px-6 py-3 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/30 rounded-2xl transition-all group shadow-lg shadow-rose-500/5"
+                                className="flex items-center gap-4 px-8 py-5 bg-rose-500 hover:bg-rose-600 text-white rounded-[1.5rem] transition-all group shadow-2xl shadow-rose-500/40"
                             >
-                                <span className="text-2xl group-hover:scale-110 transition-transform">🛡️</span>
+                                <span className="text-3xl group-hover:rotate-12 transition-transform">🛡️</span>
                                 <div className="text-left">
-                                    <div className="text-[10px] font-black uppercase tracking-[0.2em] text-rose-400">Zona de Seguridad</div>
-                                    <div className="text-[9px] text-rose-500/60 font-bold">Mantenimiento Crítico</div>
+                                    <div className="text-xs font-black uppercase tracking-[0.2em]">Zona de Seguridad</div>
+                                    <div className="text-[10px] text-white/70 font-bold">Backup, Reset y Sistema</div>
                                 </div>
                             </button>
                         </div>
@@ -131,16 +131,17 @@ export default function AdminDashboardView({ readOnly = false, onEnterMaintenanc
                         <h3 className="text-xl font-bold mb-6">Listado de Alumnos</h3>
                         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                             {approvedUsers.map(user => (
-                                <div key={user.id} className="p-4 bg-white/5 border border-white/10 rounded-xl flex items-center justify-between group/user">
+                                <div key={user.id} className="p-4 bg-white/5 border border-white/10 rounded-xl flex items-center justify-between">
                                     <div>
                                         <div className="font-bold text-sm tracking-tight">{user.full_name}</div>
                                         <div className="text-[10px] text-gray-500 font-medium">{user.email}</div>
                                     </div>
                                     <button
                                         onClick={() => onImpersonate?.(user)}
-                                        className="text-[9px] font-black uppercase tracking-widest bg-emerald-500 text-gray-950 px-3 py-1.5 rounded-lg opacity-0 group-hover/user:opacity-100 transition-all hover:scale-105 active:scale-95 shadow-lg shadow-emerald-500/20"
+                                        className="text-[10px] font-black uppercase tracking-widest bg-emerald-500 hover:bg-emerald-400 text-gray-950 px-5 py-3 rounded-xl transition-all hover:scale-105 active:scale-95 shadow-xl shadow-emerald-500/30 flex items-center gap-2"
                                     >
-                                        Ver Trabajo
+                                        <span className="text-sm">👁️</span>
+                                        SUPLANTAR (MODO AYUDA)
                                     </button>
                                 </div>
                             ))}
