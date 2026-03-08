@@ -75,7 +75,6 @@ export default function BrigadaFichaView({ userId, teamId, isCreator = false, on
         comunicacion: '',
         produccion: ''
     });
-    const [teamData, setTeamData] = useState<any>(null);
     const [signed, setSigned] = useState(false);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -90,7 +89,6 @@ export default function BrigadaFichaView({ userId, teamId, isCreator = false, on
                 .single();
 
             if (!fetchError && data) {
-                setTeamData(data);
                 if (data.role_assignments) {
                     setRoleNames(data.role_assignments);
                 }
