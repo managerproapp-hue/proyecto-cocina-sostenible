@@ -82,15 +82,16 @@ export default function AdminDashboardView({ readOnly = false, onEnterMaintenanc
                     </div>
 
                     {!readOnly && (
-                        <div className="flex gap-4 p-2 bg-rose-500/5 rounded-3xl border border-rose-500/10 active:scale-95 transition-all">
+                        <div className="flex gap-4 p-2 bg-rose-500/10 rounded-[2rem] border border-rose-500/20 shadow-[0_8px_0_0_rgba(159,18,57,1)] active:translate-y-1 active:shadow-none transition-all">
                             <button
                                 onClick={onEnterMaintenance}
-                                className="flex items-center gap-4 px-8 py-5 bg-rose-500 hover:bg-rose-600 text-white rounded-[1.5rem] transition-all group shadow-2xl shadow-rose-500/40"
+                                className="flex items-center gap-6 px-10 py-6 bg-rose-600 hover:bg-rose-500 text-white rounded-[1.5rem] transition-all group overflow-hidden relative"
                             >
-                                <span className="text-3xl group-hover:rotate-12 transition-transform">🛡️</span>
-                                <div className="text-left">
-                                    <div className="text-xs font-black uppercase tracking-[0.2em]">Zona de Seguridad</div>
-                                    <div className="text-[10px] text-white/70 font-bold">Backup, Reset y Sistema</div>
+                                <div className="absolute inset-0 bg-gradient-to-tr from-rose-900/20 to-transparent pointer-events-none" />
+                                <span className="text-4xl group-hover:scale-110 transition-transform drop-shadow-lg">🛡️</span>
+                                <div className="text-left relative z-10">
+                                    <div className="text-sm font-black uppercase tracking-[0.25em] drop-shadow-md">Zona de Seguridad</div>
+                                    <div className="text-[11px] text-white/80 font-bold uppercase tracking-widest">Mantenimiento y Respaldo</div>
                                 </div>
                             </button>
                         </div>
@@ -138,7 +139,7 @@ export default function AdminDashboardView({ readOnly = false, onEnterMaintenanc
                                     </div>
                                     <button
                                         onClick={() => onImpersonate?.(user)}
-                                        className="text-[10px] font-black uppercase tracking-widest bg-emerald-500 hover:bg-emerald-400 text-gray-950 px-5 py-3 rounded-xl transition-all hover:scale-105 active:scale-95 shadow-xl shadow-emerald-500/30 flex items-center gap-2"
+                                        className="text-[10px] font-black uppercase tracking-widest bg-blue-600 hover:bg-blue-500 text-white px-5 py-3 rounded-xl transition-all hover:scale-105 active:scale-95 shadow-[0_4px_0_0_rgba(29,78,216,1)] active:shadow-none active:translate-y-1 flex items-center gap-2"
                                     >
                                         <span className="text-sm">👁️</span>
                                         SUPLANTAR (MODO AYUDA)
