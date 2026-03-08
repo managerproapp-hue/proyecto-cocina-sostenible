@@ -6,17 +6,19 @@ import LoginView from './views/LoginView';
 import OnboardingView from './views/OnboardingView';
 import BrigadaFichaView from './views/BrigadaFichaView';
 import AdminDashboardView from './views/AdminDashboardView';
+import MaintenanceView from './views/MaintenanceView';
 import WaitingApprovalView from './views/WaitingApprovalView';
 import { ZONAS_MURCIA } from './data/zonas';
 import type { Session } from '@supabase/supabase-js';
 
-type View = 'landing' | 'onboarding' | 'brigada-ficha' | 'dashboard' | 'admin-dashboard' | 'waiting-approval' | 'unauthorized' | 'invitado-dashboard';
+type View = 'landing' | 'onboarding' | 'brigada-ficha' | 'dashboard' | 'admin-dashboard' | 'waiting-approval' | 'unauthorized' | 'invitado-dashboard' | 'maintenance';
 
 function App() {
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [currentView, setCurrentView] = useState<View>('landing');
   const [userProfile, setUserProfile] = useState<any>(null);
+  const [impersonatedUser, setImpersonatedUser] = useState<any>(null);
 
   const fetchProfile = async (userId: string, userEmail: string | undefined, currentSession: any) => {
     try {
@@ -182,14 +184,24 @@ function App() {
           />
         );
       case 'admin-dashboard':
-        return <AdminDashboardView />;
+        return <AdminDashboardView
+          onEnterMaintenance={() => setCurrentView('maintenance')}
+          onImpersonate={(user: any) => setImpersonatedUser(user)}
+        />;
       case 'invitado-dashboard':
         return <AdminDashboardView readOnly={true} />;
+      case 'maintenance':
+        if (userProfile?.email !== 'managerproapp@gmail.com') {
+          setCurrentView('admin-dashboard');
+          return null;
+        }
+        return <MaintenanceView onBack={() => setCurrentView('admin-dashboard')} />;
       case 'dashboard':
         return (
           <DashboardView
-            userProfile={userProfile}
-            zone={userProfile?.teams?.zone_id ? ZONAS_MURCIA.find(z => z.id === userProfile.teams.zone_id) || null : null}
+            userProfile={impersonatedUser || userProfile}
+            isImpersonated={!!impersonatedUser}
+            zone={(impersonatedUser || userProfile)?.teams?.zone_id ? ZONAS_MURCIA.find(z => z.id === (impersonatedUser || userProfile).teams.zone_id) || null : null}
             onChangeZone={() => setCurrentView('onboarding')}
           />
         );
@@ -202,6 +214,20 @@ function App() {
 
   return (
     <div className="min-h-screen bg-gray-950">
+      {impersonatedUser && (
+        <div className="bg-amber-500 text-gray-950 px-6 py-2 flex items-center justify-between sticky top-0 z-[100] font-black text-[10px] uppercase tracking-[0.2em] shadow-lg">
+          <div className="flex items-center gap-3">
+            <span className="text-lg">🕵️</span>
+            <span>MODO AYUDA: Visualizando a <span className="underline decoration-2">{impersonatedUser.full_name}</span></span>
+          </div>
+          <button
+            onClick={() => setImpersonatedUser(null)}
+            className="bg-gray-950 text-white px-4 py-1 rounded-full hover:bg-gray-800 transition-colors"
+          >
+            Volver al Panel Admin
+          </button>
+        </div>
+      )}
       {renderView()}
 
       {/* Debug Footer (Only if session exists) */}

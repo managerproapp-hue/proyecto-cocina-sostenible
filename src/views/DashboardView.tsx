@@ -1,9 +1,11 @@
+import { useState, useEffect } from 'react';
 import { supabase } from '../lib/supabaseClient';
 import type { Zone } from '../types';
 
 interface DashboardViewProps {
     userProfile: any;
     zone: Zone | null;
+    isImpersonated?: boolean;
     onChangeZone: () => void;
 }
 
@@ -46,7 +48,7 @@ const TASKS = [
     },
 ];
 
-export default function DashboardView({ userProfile, zone, onChangeZone }: DashboardViewProps) {
+export default function DashboardView({ userProfile, zone, isImpersonated = false, onChangeZone }: DashboardViewProps) {
     const colorMap: Record<string, string> = {
         emerald: 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400',
         blue: 'border-blue-500/30 bg-blue-500/5 text-blue-400',
@@ -61,24 +63,91 @@ export default function DashboardView({ userProfile, zone, onChangeZone }: Dashb
         rose: 'bg-rose-500/10 text-rose-400',
     };
 
+    const [showDownloadOptions, setShowDownloadOptions] = useState(false);
+    const [downloadSelection, setDownloadSelection] = useState({
+        perfil: true,
+        equipo: true,
+        tareas: true,
+        platos: true
+    });
+    const [taskStatuses, setTaskStatuses] = useState<Record<number, string>>({});
+    const [lockedTasks, setLockedTasks] = useState<Record<number, boolean>>({});
+
+    useEffect(() => {
+        const fetchTasks = async () => {
+            const teamId = userProfile?.team_id;
+            if (!teamId) return;
+
+            const { data } = await supabase
+                .from('tasks')
+                .select('task_number, status, is_locked')
+                .eq('team_id', teamId);
+
+            if (data) {
+                const statuses: Record<number, string> = {};
+                const locks: Record<number, boolean> = {};
+                data.forEach((t: any) => {
+                    statuses[t.task_number] = t.status;
+                    locks[t.task_number] = t.is_locked;
+                });
+                setTaskStatuses(statuses);
+                setLockedTasks(locks);
+            }
+        };
+        fetchTasks();
+    }, [userProfile]);
+
+    const handleTaskClick = (taskId: number) => {
+        const isLocked = lockedTasks[taskId];
+        if (isLocked && !isImpersonated) {
+            alert("Esta fase está bloqueada. Contacta con el profesor si necesitas modificarla.");
+            return;
+        }
+        // In a real app, this would navigate to a detailed view or open a modal
+        alert(`Abriendo detalles de la Fase ${taskId}... ${isImpersonated ? '(Modo Edición Admin)' : ''}`);
+    };
+
+    const toggleLock = async (taskId: number) => {
+        if (!isImpersonated) return; // Only admin can lock/unlock manually for now, or maybe students can "finish"
+
+        const newLockState = !lockedTasks[taskId];
+        const { error } = await supabase
+            .from('tasks')
+            .upsert({
+                team_id: userProfile?.team_id,
+                task_number: taskId,
+                is_locked: newLockState,
+                updated_at: new Date().toISOString()
+            }, { onConflict: 'team_id,task_number' });
+
+        if (!error) {
+            setLockedTasks(prev => ({ ...prev, [taskId]: newLockState }));
+        }
+    };
+
     const handleDownloadMyData = async () => {
         try {
             const teamId = userProfile?.team_id;
             const data: any = {
-                perfil: userProfile,
-                equipo: null,
-                tareas: [],
-                platos: []
+                version: '1.0-granular',
+                timestamp: new Date().toISOString(),
             };
 
-            if (teamId) {
-                const { data: team } = await supabase.from('teams').select('*').eq('id', teamId).single();
-                const { data: tasks } = await supabase.from('tasks').select('*').eq('team_id', teamId);
-                const { data: platos } = await supabase.from('platos').select('*').eq('team_id', teamId);
+            if (downloadSelection.perfil) data.perfil = userProfile;
 
-                data.equipo = team;
-                data.tareas = tasks || [];
-                data.platos = platos || [];
+            if (teamId) {
+                if (downloadSelection.equipo) {
+                    const { data: team } = await supabase.from('teams').select('*').eq('id', teamId).single();
+                    data.equipo = team;
+                }
+                if (downloadSelection.tareas) {
+                    const { data: tasks } = await supabase.from('tasks').select('*').eq('team_id', teamId);
+                    data.tareas = tasks || [];
+                }
+                if (downloadSelection.platos) {
+                    const { data: platos } = await supabase.from('platos').select('*').eq('team_id', teamId);
+                    data.platos = platos || [];
+                }
             }
 
             const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -86,10 +155,9 @@ export default function DashboardView({ userProfile, zone, onChangeZone }: Dashb
             const a = document.createElement('a');
             a.href = url;
             a.download = `mis_datos_proyecto_${new Date().toISOString().split('T')[0]}.json`;
-            document.body.appendChild(a);
             a.click();
-            document.body.removeChild(a);
             URL.revokeObjectURL(url);
+            setShowDownloadOptions(false);
         } catch (err) {
             alert("Error al descargar tus datos");
         }
@@ -120,7 +188,7 @@ export default function DashboardView({ userProfile, zone, onChangeZone }: Dashb
 
                     <div className="flex items-center gap-3">
                         <button
-                            onClick={handleDownloadMyData}
+                            onClick={() => setShowDownloadOptions(true)}
                             className="p-2 text-gray-500 hover:text-emerald-400 transition-colors"
                             title="Descargar mis datos y proyecto"
                         >
@@ -188,25 +256,44 @@ export default function DashboardView({ userProfile, zone, onChangeZone }: Dashb
                     {TASKS.map((task) => (
                         <div
                             key={task.id}
-                            className={`relative p-6 rounded-2xl border-2 transition-all duration-300 hover:-translate-y-1 cursor-pointer group ${colorMap[task.color]}`}
+                            onClick={() => handleTaskClick(task.id)}
+                            className={`relative p-6 rounded-2xl border-2 transition-all duration-300 hover:-translate-y-1 cursor-pointer group ${colorMap[task.color]} ${lockedTasks[task.id] ? 'opacity-80' : ''}`}
                         >
                             <div className="flex items-start gap-4 mb-4">
-                                <div className={`text-3xl`}>{task.icon}</div>
+                                <div className={`text-3xl flex flex-col items-center gap-2`}>
+                                    {task.icon}
+                                    {lockedTasks[task.id] && (
+                                        <span className="text-xl" title="Fase Bloqueada">🔒</span>
+                                    )}
+                                </div>
                                 <div className="flex-1">
-                                    <div className={`inline-block text-xs font-black px-2 py-0.5 rounded-full ${badgeMap[task.color]} mb-2`}>
-                                        FASE {task.step}
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div className={`inline-block text-xs font-black px-2 py-0.5 rounded-full ${badgeMap[task.color]}`}>
+                                            FASE {task.step}
+                                        </div>
+                                        {isImpersonated && (
+                                            <button
+                                                onClick={(e) => { e.stopPropagation(); toggleLock(task.id); }}
+                                                className="text-[10px] bg-white/10 hover:bg-white/20 px-2 py-1 rounded-md border border-white/10 transition-colors"
+                                            >
+                                                {lockedTasks[task.id] ? '🔓 Desbloquear' : '🔒 Bloquear'}
+                                            </button>
+                                        )}
                                     </div>
                                     <h3 className="text-white font-bold text-lg leading-tight">{task.title}</h3>
                                 </div>
                             </div>
                             <p className="text-gray-500 text-sm leading-relaxed">{task.description}</p>
                             <div className="mt-5 flex items-center justify-between">
-                                <span className="text-xs text-gray-600 border border-white/10 px-2 py-1 rounded-full">
-                                    Pendiente
+                                <span className={`text-[10px] border px-2 py-1 rounded-full font-bold uppercase tracking-widest ${taskStatuses[task.id] === 'completed' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-400' : 'text-gray-600 border-white/10'}`}>
+                                    {taskStatuses[task.id] === 'completed' ? 'Completado' : (taskStatuses[task.id] || 'Pendiente')}
                                 </span>
-                                <svg className="w-5 h-5 text-gray-700 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                                </svg>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-[10px] text-gray-500 opacity-0 group-hover:opacity-100 transition-opacity uppercase font-black tracking-widest">Entrar</span>
+                                    <svg className="w-5 h-5 text-gray-700 group-hover:text-white transition-colors" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
+                                    </svg>
+                                </div>
                             </div>
                         </div>
                     ))}
@@ -219,20 +306,59 @@ export default function DashboardView({ userProfile, zone, onChangeZone }: Dashb
                             <div className="text-3xl mb-4">📥</div>
                             <h3 className="text-xl font-black text-white mb-2">Descargar Mi Carpeta Digital</h3>
                             <p className="text-gray-500 text-sm mb-6">
-                                Obtén una copia completa en JSON de tu perfil, equipo, tareas y platos registrados hasta el momento.
-                                Ideal para revisiones fuera de la plataforma.
+                                Obtén una copia personalizada de tu perfil, equipo, tareas y platos registrados.
+                                Puedes elegir qué partes descargar.
                             </p>
                         </div>
                         <button
-                            onClick={handleDownloadMyData}
+                            onClick={() => setShowDownloadOptions(true)}
                             className="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-black uppercase tracking-widest text-xs rounded-2xl transition-all shadow-lg shadow-emerald-500/10 flex items-center justify-center gap-2"
                         >
                             <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                             </svg>
-                            Descargar Backup Personal
+                            Opciones de Descarga
                         </button>
                     </div>
+
+                    {/* Download Modal */}
+                    {showDownloadOptions && (
+                        <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-gray-950/80 backdrop-blur-sm animate-in fade-in duration-300">
+                            <div className="bg-gray-900 border border-white/10 rounded-[3rem] p-10 max-w-sm w-full shadow-2xl">
+                                <h3 className="text-2xl font-black mb-2">Descarga Granular</h3>
+                                <p className="text-gray-500 text-xs mb-8 uppercase tracking-widest font-bold">Selecciona qué incluir</p>
+
+                                <div className="space-y-4 mb-10">
+                                    {Object.entries(downloadSelection).map(([key, value]) => (
+                                        <label key={key} className="flex items-center justify-between p-4 bg-white/5 rounded-2xl cursor-pointer hover:bg-white/10 transition-all border border-transparent hover:border-white/10 group">
+                                            <span className="text-sm font-bold capitalize text-gray-400 group-hover:text-white">{key}</span>
+                                            <input
+                                                type="checkbox"
+                                                checked={value as boolean}
+                                                onChange={() => setDownloadSelection(prev => ({ ...prev, [key]: !prev[key as keyof typeof prev] }))}
+                                                className="w-5 h-5 rounded-lg bg-gray-800 border-white/10 text-emerald-500 focus:ring-emerald-500"
+                                            />
+                                        </label>
+                                    ))}
+                                </div>
+
+                                <div className="flex flex-col gap-3">
+                                    <button
+                                        onClick={handleDownloadMyData}
+                                        className="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-black uppercase tracking-widest text-[10px] rounded-2xl transition-all"
+                                    >
+                                        Iniciar Descarga JSON
+                                    </button>
+                                    <button
+                                        onClick={() => setShowDownloadOptions(false)}
+                                        className="w-full py-4 bg-white/5 hover:bg-white/10 text-gray-400 font-black uppercase tracking-widest text-[10px] rounded-2xl transition-all"
+                                    >
+                                        Cancelar
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
 
                     <div className="bg-gradient-to-br from-blue-600/10 to-emerald-600/10 border border-white/10 rounded-3xl p-8 backdrop-blur-sm relative overflow-hidden group">
                         <div className="absolute top-0 right-0 p-6 text-5xl opacity-10 group-hover:scale-110 transition-transform duration-500">🛡️</div>
