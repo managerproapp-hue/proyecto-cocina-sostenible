@@ -212,11 +212,44 @@ export default function DashboardView({ userProfile, zone, onChangeZone }: Dashb
                     ))}
                 </div>
 
-                {/* Coming soon */}
-                <div className="mt-12 text-center p-8 border border-dashed border-white/10 rounded-2xl">
-                    <div className="text-3xl mb-3">🚧</div>
-                    <h3 className="text-white font-bold mb-1">Más funcionalidades próximamente</h3>
-                    <p className="text-gray-600 text-sm">Brigada Digital, gestor de recetas, informe final y mucho más.</p>
+                {/* Project Resources & Actions */}
+                <div className="mt-12 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="bg-white/5 border border-white/10 rounded-3xl p-8 backdrop-blur-sm flex flex-col justify-between">
+                        <div>
+                            <div className="text-3xl mb-4">📥</div>
+                            <h3 className="text-xl font-black text-white mb-2">Descargar Mi Carpeta Digital</h3>
+                            <p className="text-gray-500 text-sm mb-6">
+                                Obtén una copia completa en JSON de tu perfil, equipo, tareas y platos registrados hasta el momento.
+                                Ideal para revisiones fuera de la plataforma.
+                            </p>
+                        </div>
+                        <button
+                            onClick={handleDownloadMyData}
+                            className="w-full py-4 bg-emerald-500 hover:bg-emerald-400 text-gray-950 font-black uppercase tracking-widest text-xs rounded-2xl transition-all shadow-lg shadow-emerald-500/10 flex items-center justify-center gap-2"
+                        >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M4 16v1a2 2 0 002 2h12a2 2 0 002-2v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
+                            Descargar Backup Personal
+                        </button>
+                    </div>
+
+                    <div className="bg-gradient-to-br from-blue-600/10 to-emerald-600/10 border border-white/10 rounded-3xl p-8 backdrop-blur-sm relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-6 text-5xl opacity-10 group-hover:scale-110 transition-transform duration-500">🛡️</div>
+                        <h3 className="text-xl font-black text-white mb-4">Compromiso Sostenible</h3>
+                        <p className="text-gray-400 text-sm leading-relaxed mb-6">
+                            Recuerda que todos los ingredientes seleccionados deben cumplir con los criterios de proximidad (Km 0) y temporada de la Región de Murcia.
+                        </p>
+                        <div className="flex items-center gap-2 text-emerald-400 text-xs font-bold uppercase tracking-wider">
+                            <span className="w-1.5 h-1.5 bg-emerald-400 rounded-full animate-pulse"></span>
+                            Validado por Sistema
+                        </div>
+                    </div>
+                </div>
+
+                {/* Coming soon footer */}
+                <div className="mt-12 text-center py-12 border-t border-white/5">
+                    <p className="text-gray-600 text-[10px] uppercase font-black tracking-[0.2em]">Brigada Digital · IES La Flota · 2026/27</p>
                 </div>
             </main>
         </div>

@@ -14,7 +14,9 @@ export default function AdminDashboardView({ readOnly = false }: AdminDashboardV
     const [pendingRequests, setPendingRequests] = useState<any[]>([]);
     const [approvedUsers, setApprovedUsers] = useState<any[]>([]);
     const [rejectedUsers, setRejectedUsers] = useState<any[]>([]);
+    const [allTeams, setAllTeams] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [activeList, setActiveList] = useState<'students' | 'teams' | null>(null);
 
     const fetchData = async () => {
         setLoading(true);
@@ -62,6 +64,15 @@ export default function AdminDashboardView({ readOnly = false }: AdminDashboardV
 
         if (rejError) console.error("Error fetching rejected:", rejError);
         else setRejectedUsers(rejected || []);
+
+        // Fetch all teams
+        const { data: teams, error: teamsError } = await supabase
+            .from('teams')
+            .select('*, profiles(count)')
+            .order('name', { ascending: true });
+
+        if (teamsError) console.error("Error fetching teams list:", teamsError);
+        else setAllTeams(teams || []);
 
         setLoading(false);
     };
@@ -187,28 +198,65 @@ export default function AdminDashboardView({ readOnly = false }: AdminDashboardV
             </header>
 
             <main className="max-w-7xl mx-auto px-6 py-12">
-                <div className="mb-10">
-                    <h2 className="text-4xl font-black mb-2 tracking-tight">Visión General</h2>
-                    <p className="text-gray-500 font-medium">Gestión dinámica de alumnos y brigadas 2026/27</p>
+                <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+                    <div>
+                        <h2 className="text-4xl font-black mb-2 tracking-tight">Visión General</h2>
+                        <p className="text-gray-500 font-medium">Gestión dinámica de alumnos y brigadas 2026/27</p>
+                    </div>
+
+                    {!readOnly && (
+                        <div className="flex gap-3">
+                            <button
+                                onClick={handleDownloadBackup}
+                                className="flex items-center gap-2 px-4 py-2 bg-white/5 hover:bg-white/10 border border-white/10 rounded-xl transition-all group"
+                                title="Descargar Backup Completo (JSON)"
+                            >
+                                <span className="text-xl group-hover:scale-110 transition-transform">💾</span>
+                                <span className="text-[10px] font-black uppercase tracking-widest text-gray-400 group-hover:text-white">Backup</span>
+                            </button>
+                            <button
+                                onClick={handleNuclearReset}
+                                className="flex items-center gap-2 px-4 py-2 bg-rose-500/10 hover:bg-rose-500/20 border border-rose-500/20 rounded-xl transition-all group"
+                                title="Reseteo Nuclear del Sistema"
+                            >
+                                <span className="text-xl group-hover:animate-pulse">☢️</span>
+                                <span className="text-[10px] font-black uppercase tracking-widest text-rose-400 group-hover:text-rose-300">Reset</span>
+                            </button>
+                        </div>
+                    )}
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-                    <div className="bg-emerald-500/5 border border-emerald-500/20 rounded-3xl p-8 transition-all hover:bg-emerald-500/10 hover:scale-[1.02] duration-300">
-                        <div className="text-emerald-400 text-xs font-black uppercase tracking-widest mb-3">Alumnos Activos</div>
+                    <button
+                        onClick={() => setActiveList(activeList === 'students' ? null : 'students')}
+                        className={`text-left group transition-all duration-300 rounded-3xl p-8 border ${activeList === 'students' ? 'bg-emerald-500/20 border-emerald-500 scale-[1.02]' : 'bg-emerald-500/5 border-emerald-500/20 hover:bg-emerald-500/10 hover:scale-[1.02]'}`}
+                    >
+                        <div className="text-emerald-400 text-xs font-black uppercase tracking-widest mb-3 flex items-center justify-between">
+                            Alumnos Activos
+                            <span className="text-[10px] bg-emerald-500/20 px-2 py-0.5 rounded-full">{activeList === 'students' ? 'Ocultar' : 'Ver Lista'}</span>
+                        </div>
                         {loading ? (
                             <div className="w-8 h-8 border-2 border-emerald-500/20 border-t-emerald-400 rounded-full animate-spin" />
                         ) : (
                             <div className="text-5xl font-black">{stats.totalStudents}</div>
                         )}
-                    </div>
-                    <div className="bg-blue-500/5 border border-blue-500/20 rounded-3xl p-8 transition-all hover:bg-blue-500/10 hover:scale-[1.02] duration-300">
-                        <div className="text-blue-400 text-xs font-black uppercase tracking-widest mb-3">Brigadas (Equipos)</div>
+                    </button>
+
+                    <button
+                        onClick={() => setActiveList(activeList === 'teams' ? null : 'teams')}
+                        className={`text-left group transition-all duration-300 rounded-3xl p-8 border ${activeList === 'teams' ? 'bg-blue-500/20 border-blue-500 scale-[1.02]' : 'bg-blue-500/5 border-blue-500/20 hover:bg-blue-500/10 hover:scale-[1.02]'}`}
+                    >
+                        <div className="text-blue-400 text-xs font-black uppercase tracking-widest mb-3 flex items-center justify-between">
+                            Brigadas (Equipos)
+                            <span className="text-[10px] bg-blue-500/20 px-2 py-0.5 rounded-full">{activeList === 'teams' ? 'Ocultar' : 'Ver Lista'}</span>
+                        </div>
                         {loading ? (
                             <div className="w-8 h-8 border-2 border-blue-500/20 border-t-blue-400 rounded-full animate-spin" />
                         ) : (
                             <div className="text-5xl font-black">{stats.totalTeams}</div>
                         )}
-                    </div>
+                    </button>
+
                     <div className="bg-amber-500/5 border border-amber-500/20 rounded-3xl p-8 transition-all hover:bg-amber-500/10 hover:scale-[1.02] duration-300">
                         <div className="text-amber-400 text-xs font-black uppercase tracking-widest mb-3">Tareas Registradas</div>
                         {loading ? (
@@ -218,6 +266,58 @@ export default function AdminDashboardView({ readOnly = false }: AdminDashboardV
                         )}
                     </div>
                 </div>
+
+                {/* Detailed Lists (Conditional) */}
+                {activeList === 'students' && (
+                    <div className="mb-12 animate-in fade-in slide-in-from-top-4 duration-500">
+                        <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-10 backdrop-blur-sm">
+                            <h3 className="text-2xl font-black mb-6">Listado Completo de Alumnos</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                {approvedUsers.map(user => (
+                                    <div key={user.id} className="p-4 bg-white/5 border border-white/10 rounded-2xl flex items-center gap-4">
+                                        <div className="w-10 h-10 bg-emerald-500/20 rounded-full flex items-center justify-center text-emerald-500 font-black">
+                                            {user.full_name?.substring(0, 1).toUpperCase() || '?'}
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold text-white leading-tight">{user.full_name}</p>
+                                            <p className="text-[10px] text-gray-500">{user.email}</p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {activeList === 'teams' && (
+                    <div className="mb-12 animate-in fade-in slide-in-from-top-4 duration-500">
+                        <div className="bg-white/5 border border-white/10 rounded-[2.5rem] p-10 backdrop-blur-sm">
+                            <h3 className="text-2xl font-black mb-6">Listado de Brigadas (Equipos)</h3>
+                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                {allTeams.map(team => (
+                                    <div key={team.id} className="p-6 bg-white/5 border border-white/10 rounded-2xl">
+                                        <div className="flex justify-between items-start mb-4">
+                                            <h4 className="font-black text-lg text-white">{team.name}</h4>
+                                            <span className="text-[10px] font-black px-2 py-0.5 bg-blue-500/20 text-blue-400 rounded-full uppercase tracking-tighter">
+                                                CÓDIGO: {team.invite_code}
+                                            </span>
+                                        </div>
+                                        <div className="space-y-2 text-xs text-gray-400">
+                                            <p className="flex justify-between">
+                                                <span>Integrantes:</span>
+                                                <span className="text-white font-bold">{team.profiles?.[0]?.count || 0} alumnos</span>
+                                            </p>
+                                            <p className="flex justify-between">
+                                                <span>Estado:</span>
+                                                <span className="text-emerald-400 font-bold uppercase tracking-widest text-[10px]">{team.status}</span>
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    </div>
+                )}
 
                 {/* Access Requests Management */}
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
@@ -381,38 +481,6 @@ export default function AdminDashboardView({ readOnly = false }: AdminDashboardV
                             </div>
                         </div>
 
-                        {/* Sección de Mantenimiento */}
-                        {!readOnly && (
-                            <div className="bg-rose-500/5 border border-rose-500/20 rounded-[2.5rem] p-10 backdrop-blur-sm">
-                                <div className="flex items-center gap-4 mb-8">
-                                    <div className="text-4xl">⚙️</div>
-                                    <div>
-                                        <h3 className="text-2xl font-black text-white">Mantenimiento Crítico</h3>
-                                        <p className="text-rose-500/60 text-xs font-bold uppercase tracking-wider">Zona de Seguridad · Solo Administradores</p>
-                                    </div>
-                                </div>
-
-                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                    <button
-                                        onClick={handleDownloadBackup}
-                                        className="flex flex-col items-center justify-center p-8 bg-white/5 border border-white/10 rounded-3xl hover:bg-white/10 transition-all group"
-                                    >
-                                        <div className="text-3xl mb-3 group-hover:scale-110 transition-transform">💾</div>
-                                        <div className="text-sm font-black text-white">Copia de Seguridad</div>
-                                        <div className="text-[10px] text-gray-500 mt-1">Descarga JSON de todos los datos</div>
-                                    </button>
-
-                                    <button
-                                        onClick={handleNuclearReset}
-                                        className="flex flex-col items-center justify-center p-8 bg-rose-500/5 border border-rose-500/10 rounded-3xl hover:bg-rose-500/20 transition-all group"
-                                    >
-                                        <div className="text-3xl mb-3 group-hover:animate-bounce">☢️</div>
-                                        <div className="text-sm font-black text-rose-500">Reseteo Nuclear</div>
-                                        <div className="text-[10px] text-rose-500/40 mt-1 uppercase font-bold tracking-tighter">Borrar sistema excepto Admin</div>
-                                    </button>
-                                </div>
-                            </div>
-                        )}
                     </div>
                 </div>
             </main>
