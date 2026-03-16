@@ -485,16 +485,72 @@ export default function DashboardView({ userProfile, zone, isImpersonated = fals
                         </p>
 
                         <div className="space-y-4 mb-8">
-                            <label className="block text-xs font-black uppercase tracking-widest text-emerald-500/70 mb-2">Desarrollo de la Fase:</label>
-                            <textarea
-                                value={taskContent}
-                                onChange={(e) => setTaskContent(e.target.value)}
-                                disabled={lockedTasks[selectedTask.id] && !isImpersonated}
-                                className="w-full h-64 bg-white/5 border border-white/10 rounded-2xl p-6 text-sm text-white placeholder-gray-700 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 outline-none transition-all resize-none shadow-inner"
-                                placeholder="Describe aquí el trabajo realizado por la brigada para esta fase..."
-                            />
+                            {selectedTask.id === 1 ? (
+                                <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
+                                    <h4 className="text-emerald-500 text-[10px] font-black uppercase tracking-widest mb-4">Documento de Entrega</h4>
+
+                                    <div className="grid grid-cols-2 gap-4 mb-6">
+                                        <div>
+                                            <p className="text-gray-500 text-[10px] uppercase font-bold mb-1">Nombre de la Brigada</p>
+                                            <p className="text-white font-bold">{userProfile?.teams?.name || '---'}</p>
+                                        </div>
+                                        <div>
+                                            <p className="text-gray-500 text-[10px] uppercase font-bold mb-1">Zona Gastronómica</p>
+                                            <p className="text-white font-bold">{zone?.name || '---'}</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="mb-6">
+                                        <p className="text-gray-500 text-[10px] uppercase font-bold mb-2">Componentes y Roles a Desarrollar</p>
+                                        <div className="space-y-2">
+                                            {userProfile?.teams?.role_assignments && Object.keys(userProfile.teams.role_assignments).length > 0 ? (
+                                                Object.entries(userProfile.teams.role_assignments).map(([roleId, name]) => {
+                                                    if (!name) return null;
+                                                    const title = {
+                                                        coordinador: '👑 Coordinador/a',
+                                                        visual: '🎨 Especialista Visual',
+                                                        digital: '📲 Arquitecto/a Digital',
+                                                        comunicacion: '📢 Resp. Comunicación',
+                                                        produccion: '⚖️ Director/a Producción'
+                                                    }[roleId] || roleId;
+                                                    return (
+                                                        <div key={roleId} className="flex items-center justify-between text-sm bg-white/5 border border-white/5 px-4 py-3 rounded-xl">
+                                                            <span className="text-gray-300 font-bold">{name as string}</span>
+                                                            <span className="text-emerald-500/80 text-[10px] font-black uppercase tracking-widest">{title}</span>
+                                                        </div>
+                                                    );
+                                                })
+                                            ) : (
+                                                <div className="text-gray-500 text-sm italic">Roles aún no asignados.</div>
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    <div>
+                                        <p className="text-gray-500 text-[10px] uppercase font-bold mb-2">Breve Justificación (2-3 líneas)</p>
+                                        <textarea
+                                            value={taskContent}
+                                            onChange={(e) => setTaskContent(e.target.value)}
+                                            disabled={lockedTasks[selectedTask.id] && !isImpersonated}
+                                            className="w-full h-24 bg-gray-900/50 border border-white/10 rounded-xl p-4 text-sm text-white placeholder-gray-700 outline-none transition-all resize-none shadow-inner focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50"
+                                            placeholder="Justifica aquí por qué habéis elegido esta zona..."
+                                        />
+                                    </div>
+                                </div>
+                            ) : (
+                                <>
+                                    <label className="block text-xs font-black uppercase tracking-widest text-emerald-500/70 mb-2">Desarrollo de la Fase:</label>
+                                    <textarea
+                                        value={taskContent}
+                                        onChange={(e) => setTaskContent(e.target.value)}
+                                        disabled={lockedTasks[selectedTask.id] && !isImpersonated}
+                                        className="w-full h-64 bg-white/5 border border-white/10 rounded-2xl p-6 text-sm text-white placeholder-gray-700 focus:border-emerald-500/50 focus:ring-1 focus:ring-emerald-500/50 outline-none transition-all resize-none shadow-inner"
+                                        placeholder="Describe aquí el trabajo realizado por la brigada para esta fase..."
+                                    />
+                                </>
+                            )}
                             {lockedTasks[selectedTask.id] && !isImpersonated && (
-                                <div className="bg-rose-500/10 border border-rose-500/20 text-rose-500 text-[10px] p-3 rounded-xl font-bold text-center">
+                                <div className="bg-rose-500/10 border border-rose-500/20 text-rose-500 text-[10px] p-3 rounded-xl font-bold text-center mt-4">
                                     🔒 Esta fase ha sido validada y está bloqueada para edición.
                                 </div>
                             )}
