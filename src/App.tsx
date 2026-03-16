@@ -206,6 +206,7 @@ function App() {
             isImpersonated={!!impersonatedUser}
             zone={(impersonatedUser || userProfile)?.teams?.zone_id ? ZONAS_MURCIA.find(z => z.id === (impersonatedUser || userProfile).teams.zone_id) || null : null}
             onChangeZone={() => setCurrentView('onboarding')}
+            onOpenFicha={() => setCurrentView('brigada-ficha')}
           />
         );
       default:

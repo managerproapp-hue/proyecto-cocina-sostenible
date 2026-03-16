@@ -7,6 +7,7 @@ interface DashboardViewProps {
     zone: Zone | null;
     isImpersonated?: boolean;
     onChangeZone: () => void;
+    onOpenFicha: () => void;
 }
 
 const TASKS = [
@@ -48,7 +49,7 @@ const TASKS = [
     },
 ];
 
-export default function DashboardView({ userProfile, zone, isImpersonated = false, onChangeZone }: DashboardViewProps) {
+export default function DashboardView({ userProfile, zone, isImpersonated = false, onChangeZone, onOpenFicha }: DashboardViewProps) {
     const colorMap: Record<string, string> = {
         emerald: 'border-emerald-500/30 bg-emerald-500/5 text-emerald-400',
         blue: 'border-blue-500/30 bg-blue-500/5 text-blue-400',
@@ -489,7 +490,7 @@ export default function DashboardView({ userProfile, zone, isImpersonated = fals
                                 <div className="bg-white/5 border border-white/10 rounded-2xl p-6">
                                     <h4 className="text-emerald-500 text-[10px] font-black uppercase tracking-widest mb-4">Documento de Entrega</h4>
 
-                                    <div className="grid grid-cols-2 gap-4 mb-6">
+                                    <div className="grid grid-cols-2 gap-4 mb-4">
                                         <div>
                                             <p className="text-gray-500 text-[10px] uppercase font-bold mb-1">Nombre de la Brigada</p>
                                             <p className="text-white font-bold">{userProfile?.teams?.name || '---'}</p>
@@ -499,34 +500,60 @@ export default function DashboardView({ userProfile, zone, isImpersonated = fals
                                             <p className="text-white font-bold">{zone?.name || '---'}</p>
                                         </div>
                                     </div>
+                                    <div className="mb-6 flex justify-end">
+                                        <button
+                                            onClick={onChangeZone}
+                                            className="text-[10px] font-black uppercase tracking-widest text-emerald-500 hover:text-emerald-400 border border-emerald-500/20 hover:border-emerald-500/50 bg-emerald-500/5 px-4 py-2 rounded-lg transition-all"
+                                        >
+                                            Configurar Zona y Nombre
+                                        </button>
+                                    </div>
 
-                                    <div className="mb-6">
+                                    <div className="mb-6 border-t border-white/5 pt-6">
                                         <p className="text-gray-500 text-[10px] uppercase font-bold mb-2">Componentes y Roles a Desarrollar</p>
                                         <div className="space-y-2">
                                             {userProfile?.teams?.role_assignments && typeof userProfile.teams.role_assignments === 'object' && Object.keys(userProfile.teams.role_assignments).length > 0 ? (
-                                                Object.entries(userProfile.teams.role_assignments).map(([roleId, name]) => {
-                                                    if (!name || (typeof name === 'string' && name.trim() === '')) return null;
-                                                    const title = {
-                                                        coordinador: '👑 Coordinador/a',
-                                                        visual: '🎨 Especialista Visual',
-                                                        digital: '📲 Arquitecto/a Digital',
-                                                        comunicacion: '📢 Resp. Comunicación',
-                                                        produccion: '⚖️ Director/a Producción'
-                                                    }[roleId as string] || roleId;
-                                                    return (
-                                                        <div key={roleId} className="flex items-center justify-between text-sm bg-white/5 border border-white/5 px-4 py-3 rounded-xl">
-                                                            <span className="text-gray-300 font-bold">{name as string}</span>
-                                                            <span className="text-emerald-500/80 text-[10px] font-black uppercase tracking-widest">{title}</span>
-                                                        </div>
-                                                    );
-                                                })
+                                                <>
+                                                    {Object.entries(userProfile.teams.role_assignments).map(([roleId, name]) => {
+                                                        if (!name || (typeof name === 'string' && name.trim() === '')) return null;
+                                                        const title = {
+                                                            coordinador: '👑 Coordinador/a',
+                                                            visual: '🎨 Especialista Visual',
+                                                            digital: '📲 Arquitecto/a Digital',
+                                                            comunicacion: '📢 Resp. Comunicación',
+                                                            produccion: '⚖️ Director/a Producción'
+                                                        }[roleId as string] || roleId;
+                                                        return (
+                                                            <div key={roleId} className="flex items-center justify-between text-sm bg-white/5 border border-white/5 px-4 py-3 rounded-xl">
+                                                                <span className="text-gray-300 font-bold">{name as string}</span>
+                                                                <span className="text-emerald-500/80 text-[10px] font-black uppercase tracking-widest">{title}</span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                    {/* Botón para los que falten por rellenar */}
+                                                    <button
+                                                        onClick={onOpenFicha}
+                                                        className="w-full mt-4 py-3 border border-dashed border-emerald-500/30 hover:border-emerald-500/60 hover:bg-emerald-500/5 text-emerald-400 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all flex items-center justify-center gap-2"
+                                                    >
+                                                        <span>Rellenar Ficha de Estación</span>
+                                                        <span>→</span>
+                                                    </button>
+                                                </>
                                             ) : (
-                                                <div className="text-gray-500 text-sm italic">Roles aún no asignados. Recuerda rellenar la Ficha de Estación.</div>
+                                                <div className="text-center py-6 bg-white/5 rounded-xl border border-white/5">
+                                                    <p className="text-gray-500 text-sm mb-4">Aún no hay roles asignados en la brigada.</p>
+                                                    <button
+                                                        onClick={onOpenFicha}
+                                                        className="px-6 py-3 bg-emerald-500 hover:bg-emerald-400 text-gray-950 text-[10px] font-black uppercase tracking-widest rounded-xl transition-all shadow-lg shadow-emerald-500/20"
+                                                    >
+                                                        Completar mi Ficha de Estación
+                                                    </button>
+                                                </div>
                                             )}
                                         </div>
                                     </div>
 
-                                    <div>
+                                    <div className="border-t border-white/5 pt-6">
                                         <p className="text-gray-500 text-[10px] uppercase font-bold mb-2">Breve Justificación (2-3 líneas)</p>
                                         <textarea
                                             value={taskContent}
