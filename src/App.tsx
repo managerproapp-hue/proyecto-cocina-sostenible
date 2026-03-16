@@ -179,7 +179,7 @@ function App() {
           <BrigadaFichaView
             userId={session.user.id}
             teamId={userProfile?.team_id}
-            isCreator={userProfile?.rol === 'admin' || (userProfile?.team_id && !userProfile?.brigada_role)} // Simplification for now
+            isCreator={userProfile?.rol === 'admin' || userProfile?.id === userProfile?.teams?.creator_id}
             onComplete={() => fetchProfile(session.user.id, session.user.email, session)}
           />
         );

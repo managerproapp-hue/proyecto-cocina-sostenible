@@ -35,7 +35,8 @@ export default function OnboardingView({ userId, userEmail, onComplete }: Onboar
                     name: restaurantName,
                     zone_id: selectedZone.id,
                     invite_code: code,
-                    status: 'activo'
+                    status: 'activo',
+                    creator_id: userId
                 })
                 .select()
                 .single();
@@ -168,8 +169,8 @@ export default function OnboardingView({ userId, userEmail, onComplete }: Onboar
                                         key={z.id}
                                         onClick={() => setSelectedZone(z)}
                                         className={`p-3 rounded-xl border transition-all text-xs font-medium ${selectedZone?.id === z.id
-                                                ? 'bg-emerald-500 border-emerald-500 text-white'
-                                                : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/20'
+                                            ? 'bg-emerald-500 border-emerald-500 text-white'
+                                            : 'bg-white/5 border-white/10 text-gray-400 hover:border-white/20'
                                             }`}
                                     >
                                         {z.name}

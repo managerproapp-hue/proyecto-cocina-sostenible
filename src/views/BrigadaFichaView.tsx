@@ -107,21 +107,27 @@ export default function BrigadaFichaView({ userId, teamId, isCreator = false, on
         setError(null);
 
         try {
-            // 1. Update Profile
+            // 1. Get the name for the selected role
+            const myName = roleNames[selectedRoleId];
+            if (!myName || myName.trim() === '') {
+                throw new Error("Por favor, introduce tu nombre en el rol seleccionado.");
+            }
+
+            // 2. Update Profile
             const { error: profileError } = await supabase
                 .from('profiles')
                 .update({
                     brigada_role: selectedRoleId,
                     has_signed_commitment: true,
-                    full_name: isCreator ? roleNames.coordinador : undefined, // Update own name if creator
+                    full_name: myName,
                     updated_at: new Date().toISOString()
                 })
                 .eq('id', userId);
 
             if (profileError) throw profileError;
 
-            // 2. If creator, save all assignments to the team
-            if (isCreator && teamId) {
+            // 3. Save ALL assignments to the team (consistent for everyone, but mainly for team cohesion)
+            if (teamId) {
                 const { error: teamError } = await supabase
                     .from('teams')
                     .update({ role_assignments: roleNames })
@@ -175,14 +181,14 @@ export default function BrigadaFichaView({ userId, teamId, isCreator = false, on
                                 <h4 className="font-black text-lg leading-tight mb-1">{role.title}</h4>
                                 <p className="text-emerald-500 text-xs font-bold uppercase tracking-widest mb-4">{role.subtitle}</p>
 
-                                {isCreator ? (
+                                {isCreator || selectedRoleId === role.id ? (
                                     <div className="mb-4">
                                         <label className="block text-[10px] uppercase font-bold text-gray-500 mb-1 ml-1">Nombre del Alumno/a</label>
                                         <input
                                             type="text"
-                                            value={roleNames[role.id]}
+                                            value={roleNames[role.id] || ''}
                                             onChange={(e) => handleNameChange(role.id, e.target.value)}
-                                            placeholder="Nombre y Apellidos"
+                                            placeholder="Tu nombre y apellidos"
                                             className="w-full bg-white/5 border border-white/10 rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-emerald-500 transition-colors"
                                         />
                                     </div>
