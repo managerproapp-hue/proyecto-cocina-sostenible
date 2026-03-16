@@ -503,16 +503,16 @@ export default function DashboardView({ userProfile, zone, isImpersonated = fals
                                     <div className="mb-6">
                                         <p className="text-gray-500 text-[10px] uppercase font-bold mb-2">Componentes y Roles a Desarrollar</p>
                                         <div className="space-y-2">
-                                            {userProfile?.teams?.role_assignments && Object.keys(userProfile.teams.role_assignments).length > 0 ? (
+                                            {userProfile?.teams?.role_assignments && typeof userProfile.teams.role_assignments === 'object' && Object.keys(userProfile.teams.role_assignments).length > 0 ? (
                                                 Object.entries(userProfile.teams.role_assignments).map(([roleId, name]) => {
-                                                    if (!name) return null;
+                                                    if (!name || (typeof name === 'string' && name.trim() === '')) return null;
                                                     const title = {
                                                         coordinador: '👑 Coordinador/a',
                                                         visual: '🎨 Especialista Visual',
                                                         digital: '📲 Arquitecto/a Digital',
                                                         comunicacion: '📢 Resp. Comunicación',
                                                         produccion: '⚖️ Director/a Producción'
-                                                    }[roleId] || roleId;
+                                                    }[roleId as string] || roleId;
                                                     return (
                                                         <div key={roleId} className="flex items-center justify-between text-sm bg-white/5 border border-white/5 px-4 py-3 rounded-xl">
                                                             <span className="text-gray-300 font-bold">{name as string}</span>
@@ -521,7 +521,7 @@ export default function DashboardView({ userProfile, zone, isImpersonated = fals
                                                     );
                                                 })
                                             ) : (
-                                                <div className="text-gray-500 text-sm italic">Roles aún no asignados.</div>
+                                                <div className="text-gray-500 text-sm italic">Roles aún no asignados. Recuerda rellenar la Ficha de Estación.</div>
                                             )}
                                         </div>
                                     </div>
