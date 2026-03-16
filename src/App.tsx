@@ -36,36 +36,43 @@ function App() {
         console.error("Profile Fetch Error:", fetchError);
       }
 
-      // 2. Create if not exists
+      // 2. Create or update profile (upsert to avoid duplicate key errors)
       if (!profile) {
-        console.log("Profile not found. Creating...");
-        const { data: newProfile, error: insertError } = await supabase
+        console.log("Profile not found. Creating via upsert...");
+        const { error: upsertError } = await supabase
           .from('profiles')
-          .insert({
+          .upsert({
             id: userId,
             email: userEmail,
             full_name: currentSession?.user?.user_metadata?.full_name || userEmail?.split('@')[0],
             rol: isAdmin ? 'admin' : 'alumno',
             status: isAdmin ? 'approved' : 'pending'
-          })
-          .select()
+          }, { onConflict: 'id', ignoreDuplicates: true });
+
+        if (upsertError) {
+          console.error("Profile Upsert Error:", upsertError);
+          if (!isAdmin) {
+            // Continue anyway — maybe a race condition, refetch below
+          } else {
+            profile = { id: userId, email: userEmail, rol: 'admin', status: 'approved' };
+          }
+        }
+
+        // Refetch after upsert
+        const { data: refetched } = await supabase
+          .from('profiles')
+          .select('*, teams(*)')
+          .eq('id', userId)
           .single();
 
-        if (insertError) {
-          console.error("Profile Insert Error:", insertError);
-          // If inserting into DB fails, we show the restricted screen with the error
-          if (!isAdmin) {
-            alert("⚠️ Error en base de datos: " + insertError.message + "\nCódigo: " + insertError.code);
-            setCurrentView('unauthorized');
-            setLoading(false);
-            return;
-          }
+        if (refetched) {
+          profile = refetched;
+          console.log("Profile ready:", profile);
+        } else if (!profile) {
+          // Fallback for admin if DB is completely unreachable
           if (isAdmin) {
             profile = { id: userId, email: userEmail, rol: 'admin', status: 'approved' };
           }
-        } else {
-          profile = newProfile;
-          console.log("Profile created successfully");
         }
       }
 
